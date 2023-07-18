@@ -11,12 +11,12 @@ const User = require("./models/user");
 
 const userRoutes = require("./routes/users");
 const authRoutes = require("./routes/auth");
-const resourceRoutes = require('./routes/resource')
+const resourceRoutes = require("./routes/resource");
 
 const session = require("express-session");
 
-app.listen(5000, () => {
-  console.log("listening at port 5000");
+app.listen(process.env.PORT, () => {
+  console.log(`Listening at port ${process.env.PORT}`);
 });
 
 mongoose.connect(process.env.MONGODB_URL),
@@ -61,7 +61,7 @@ app.get("/", (req, res) => {
 
 app.use("/user", userRoutes);
 app.use("/auth", authRoutes);
-app.use('/resource',resourceRoutes)
+app.use("/resource", resourceRoutes);
 app.all("*", (req, res, next) => {
   //   next(new ExpressError("Page Not Found", 404));
   res.status(404).json({ message: "Page not found" });
