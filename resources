@@ -1,0 +1,688 @@
+[Updated Documentation 12th Jul] 
+
+* Edit Profile *  (For Young Pro)   20 endpoint + 7 resources  - 28 th Jun   
+                           Hints : 1- Replace any id of type int to type String and also for enums   
+                                         2- All keys are in camelCase style   
+                                         3- Please make sure you follow the same names for each resource key-route name 
+                                          4- If there is any update we add it bellow in the (C- issues) section 
+************************************************************************************ 
+A – Endpoints************************************************************************************ 
+   * update_profile_image (auth - Post) 
+        - input : 
+                - image (File) 
+        - output : 
+                - status 
+                - message 
+                - data : UserResource 
+ 
+   * edit_profile (auth - Post) 
+     - action : update user profile info (except email & password) 
+     - input :  (All fields are optional) 
+              - firstName (String) 
+              - lastName (String) 
+              - pronouns (String) 
+              - headline (String) 
+              - about (String) 
+              - skills (List<String> - ids ) 
+              - interests (List<String> - ids ) 
+              - languages (List<String> - ids ) 
+            late ...  - technicalSkills (List<String> - ids ) 
+            late ...  - softSkills (List<String> - ids) 
+            late ...  - personalityTraits (List<String> - ids) 
+            late ...  - financialObjectives (List<SkillResource> - ids) 
+ 
+ 
+ * remove_interest (auth - Post) 
+     - input : 
+            - id (String) 
+     - output : 
+            - status 
+            - message 
+ 
+* remove_skill (auth - Post) 
+     - input : 
+            - id (String) 
+     - output : 
+            - status 
+            - message 
+ 
+* remove_language (auth - Post) 
+        - input : 
+                - id (String) 
+        - output : 
+                - status 
+                - message 
+------------------------------------------------------------------------------------------------- 
+   * fetch_recent_portfolios (Auth - Post) 
+        - if user_id is null then it will fetch the recent portfolios of the logged in user (return 3 portfolios only) 
+        - input : 
+                 - user_id (String)     
+       - output : 
+                - status 
+                - message 
+                - data : List<PortfolioResource> 
+   * fetch_all_portfolios (Auth - GET) 
+        - if user_id is null then it will fetch the portfolios of the logged in user 
+        - input : 
+                 - user_id (String)     
+       - output : 
+                - status 
+                - message 
+                - data : List<PortfolioResource> 
+              
+  * add_portfolio (auth - Post) 
+       - input : 
+                - title (String) 
+                - description (String - optional ) 
+                - link (String - optional) 
+                - thumbnail (File - optional) 
+                - images (List<File> - optional) 
+ 
+       - output : 
+                - status 
+                - message 
+                - data : PortfolioResource 
+ 
+   * edit_portfolio (auth - Post) 
+         - input : 
+                  - id (String - required ) 
+                  - title (String) 
+                  - description (String - optional ) 
+                  - link (String - optional) 
+                  - thumbnail (File - optional) 
+                  - images (List<File> - optional) 
+ 
+        - output : 
+                 - status 
+                 - message 
+                 - data : PortfolioResource 
+   *delete_portfolio (auth - Post) 
+        - input : 
+                - id (String) 
+        - output : 
+                - status 
+                - message 
+------------------------------------------------------------------------------------------------- 
+   * create_school (auth - Post) 
+        - input : 
+                - schoolName (String) 
+                - majorName (String) 
+        - output : 
+                - status 
+                - message 
+                - data : SchoolResource 
+ 
+   * add_school (school) (auth - Post) 
+        - input : 
+                - school_id (String) 
+                - major_id (String) 
+                - start_date (String) 
+                - end_date (String) 
+        - output : 
+                - status 
+                - message 
+                - data : SchoolResource 
+ 
+   * edit_school (school) (auth - Post) 
+        - input : 
+                - id (String) 
+                - school_id (String) 
+                - major_id (String) 
+                - start_date (String) 
+                - end_date (String) 
+        - output : 
+                - status 
+                - message 
+                - data : SchoolResource 
+ 
+   * delete_school (school) (auth - Post) 
+        - input : 
+                - id (String) 
+        - output : 
+                - status 
+                - message 
+ 
+   * fetch_user_schools (auth - Post) 
+        - input : 
+                - userId (String) 
+        - output : 
+                - status 
+                - message 
+                - data : List<SchoolResource> 
+ 
+   * add_experience (auth - Post) 
+        - input : 
+                - job_title_id (String) 
+                - company_id (String) 
+                - employment_type_id (String) 
+                - start_date (String) 
+                - end_date (String) 
+        - output : 
+                - status 
+                - message 
+                - data : ExperienceResource 
+ 
+   * edit_experience (auth - Post) 
+        - input : 
+                - id (String) 
+                - job_title_id (String) 
+                - company_id (String) 
+                - employment_type_id (String) 
+                - start_date (String) 
+                - end_date (String) 
+        - output : 
+                - status 
+                - message 
+                - data : ExperienceResource 
+ 
+   * delete_experience (auth - Post) 
+        - input : 
+                - id (String) 
+        - output : 
+                - status 
+                - message 
+ 
+   * update_goals (add / edit are the same) (auth - Post) 
+        - input : 
+                - career_goals (String) 
+                - skill_goals (String) 
+                - financial_goals (String) 
+                - social_goals (String) 
+        - output : 
+                - status 
+                - message 
+                - data : GoalResource 
+ 
+* fetch_mutual_activities (auth - Post) 
+    - action : fetch mutual activities between me and user (ex : referrals , helpful , interactions , mentorship sessions) 
+    - input : 
+            - user_id (String) 
+    - output : 
+            - status 
+            - message 
+            - data :  -> myActivities (NoOfCommunityActivityResource) -> no Of times I helped him , no of times I referred him , no of times I interacted with him , no of times I mentored him 
+                      -> userActivities (NoOfCommunityActivityResource)  -> no Of times he helped me , no of times he referred me , no of times he interacted with me , no of times he mentored me 
+
+-> myRecentActivityDate (String) -> the date of the most recent activity between me and him ex : 2 days ago 
+-> userRecentActivityDate (String) -> the date of the most recent activity between him and me ex : 2 days ago 
+ 
+* fetch_user_community_activities (auth - GET) 
+      - input : 
+        - output : 
+                - status 
+                - message 
+                - data : CommunityActivityResource 
+ 
+/// Latest Update : 30th Jun 2023 
+ - Mentor - 
+ 
+ * fetch_user_availability_info (auth - Post) 
+        - action : fetch the most recent 3 dates of availability of the logged in user 
+        - input : 
+                - user_id (String) 
+        - output : 
+                - status 
+                - message 
+                - data : List<AvailabilityInfoResource> => new resource 
+ 
+ * fetch_recent_mentor_mentees (auth - Post) 
+        - action : - fetch the 2 most recent mentess 
+                   - fetch the 2 most past mentees 
+        - input : 
+                - user_id (String) 
+        - output : 
+                - status 
+                - message 
+                - data : { 
+                    current  =>  List<ConnectionResource> 
+                    past     =>  List<ConnectionResource> 
+                            } 
+ * fetch_all_mentor_mentees (auth - Post) 
+        - action : fetch all mentees based on type (current , past) 
+        - input : 
+                - user_id (String) 
+                - type (String) => current , past 
+                - query (String - optional) 
+ 
+       - output : 
+                - status 
+                - message 
+                - data : List<ConnectionResource> 
+ * update_availability (auth - Post) 
+        - action : edit/remove the availability of the logged in user 
+        - input : 
+                   [ 
+                     "day" : 1 , 
+                     "time_slots" : [ 
+<!--                        {--> 
+<!--                            "start_time" : "10:00 AM" ,--> 
+<!--                            "end_time" : "12:00 PM"--> 
+<!--                        },--> 
+<!--                        {--> 
+<!--                            "start_time" : "02:00 PM" ,--> 
+<!--                            "end_time" : "04:00 PM"--> 
+<!--                        }--> 
+<!--                      ]--> 
+                     ] 
+                - status 
+                - message 
+                - data : UserResource 
+ * edit_mentor_meeting_duration  ( auth - Post) 
+        - action : edit the meeting duration of the logged in user 
+        - input : 
+                - duration (int) 
+        - output : 
+                - status 
+                - message 
+                - data : UserResource 
+ 
+ * edit_no_of_mentees (auth - Post) 
+        - action : edit the no of mentees of the logged in user 
+        - input : 
+                - no_of_mentees (int) 
+        - output : 
+                - status 
+                - message 
+                - data : UserResource 
+ 
+* edit_mentorship_styles (auth - Post) 
+        - action : edit the mentorship styles of the logged in user 
+        - input : 
+                - mentorship_styles (List<String>) 
+        - output : 
+                - status 
+                - message 
+                - data : UserResource 
+ 
+  * remove_mentorship_style (auth - Post) 
+        - action : remove the mentorship styles of the logged in user 
+        - input : 
+                -  mentorship_style_id (String) 
+        - output : 
+                - status 
+                - message 
+  - Institution - 
+ * edit_institution_information (auth - Post) 
+        - action : the institution Object will contain these changes 
+        - input : 
+                - about 
+                - website 
+                - address 
+        - output : 
+                - status 
+                - message 
+                - data : UserResource. 
+*  
+************************************************************************************************************************************ 
+B- Resources 
+************************************************************************************************************************************ 
+*PortfolioResource 
+    - id (String) 
+    - title (String) 
+    - description (String) 
+    - link (String) 
+    - thumbnail (MediaResource) 
+    - images (List<MediaResource>) 
+ 
+*ConnectionResource 
+    - id (String) => user_id 
+    - name (String) 
+    - image (String) 
+    - university (String) 
+    - connection_type (String) =>  1 - connection , 2 - network , 3 - null 
+    - no_of_mutual_connections (int) 
+ 
+*ProfileResource 
+
+  - user (UserResource)  -                                                                                -  connectionType (String) => 1 - connection , 2 - network , 3 - null 
+  - connectionStatus (String) => 1 - connected , 2 - not connected , 3 - pending , 4 - blocked (future..) 
+  - isFollowing (boolean) (future..) 
+  - isFollowed (boolean) 
+  - mutualConnections (List <ConnectionResource>)   .....> return 2 at most 
+  - mutualConnectionsCount (int) 
+    
+ *GoalResource* 
+     - career_goals (String) 
+     - skill_goals (String) 
+     - financial_goals (String) 
+     - social_goals (String) 
+ 
+  *NoOfCommunityActivityResource* 
+     - referrals_count (int) 
+     - helpful_count (int) 
+     - interactions_count (int) 
+     - mentorship_sessions_count (int) 
+ 
+   *CommunityActivityResource * 
+         - referrals (List<CommunityUserResource>) 
+         - helpful (List<CommunityUserResource>) 
+         - interactions (List<CommunityUserResource>) 
+         - mentorship_sessions (List<CommunityUserResource>) 
+ 
+   *CommunityUserResource* 
+         - id (String) => user_id 
+         - name (String) 
+         - image (String) 
+         - university (String) 
+         - connectionType (String) =>  1 - connection , 2 - network 3 - null 
+         - activityCount (NoOfCommunityActivityResource) 
+ 
+ 
+   *MediaResource*  // images / videos with tags on it 
+      - id (String) 
+      - type (String) => 1 - image , 2 - video 
+      - url (String) 
+      - tagged_users (List<SimpleResource>) 
+ 
+************************************************************************************ 
+C - Issues 
+************************************************************************************ 
+ 
+WE need to Update the UserResource to meet the new requirements   
+     Updates : 
+             *UserResource* 
+                 -> institution_about => change to about 
+                 -> is_mentor_verified => change to is_verified 
+                 + mentor_meeting_duration (int) 
+                 + current_no_of_mentees (int) 
+                 + goals (GoalResource) 
+                 + community_activity (CommunityActivityResource) 
+ 
+ 
+* SchoolResource 
+    - id (String) 
+    - name (String)  == name => ex : "University of Toronto" 
+    - majors : List<SchoolResource> == majors => ex : "Computer Science" 
+ 
+    + major (MajorResource) 
+    - starting_date (String) 
+    - ending_date (String) 
+ 
+* AvailabilityInfoResource 
+    - id (String) 
+    - date (String) => ex : "April 29" 
+    - no_of_empty_slots (int) => ex : 3 
+- ConnectionResource (edit) 
+    - id (String) => user_id 
+    - name (String) 
+    - image (String) 
+    - headline (String) 
+    - description (String) 
+    - universityName (String) 
+    - isConnected (bool) 
+    - connection_type (String) =>  1 - connection , 2 - network , 3 - null 
+    - mutualConnections (List <ConnectionResource>)   .....> return 2 at most 
+    -XXXX DELETE THIS =>  no_of_mutual_connections (int) 
+ 
+ 
+ 
++ fetch_user_profile (post) 
+        - action : fetch user's profile based on given ID 
+        - input : 
+                - userId 
+        - output : 
+                - status 
+                - message 
+                - data : ProfileResource 
+ 
+ ------------------------------------------------------------------ 
+- send_connection_request (auth - Post) 
+    - input : 
+            - user_id (String) 
+            - relationship_type_id (int) => 1 - friend , 2 - classmate , 3 - workmate , 4 - through MiNextStep , 5 - other 
+            - connection_type (int) =>  1 - connection , 2 - network 
+    - output : 
+            - status 
+            - message 
+ 
+- withdraw_connection_request (auth - Post) 
+    - input : 
+            -  user_id (String) 
+    - output : 
+            - status 
+            - message 
+ 
+- follow_user (auth - Post) 
+    - input : 
+            - user_id (String) 
+    - output : 
+            - status 
+            - message 
+ 
+- unfollow_user (auth - Post) 
+    - input : 
+            - user_id (String) 
+    - output : 
+            - status 
+            - message 
+ 
+- change_connection_type (auth - Post) 
+    - input : 
+            - user_id (String) 
+            - connection_type (int) =>  1 - connection , 2 - network 
+    - output : 
+            - status 
+            - message 
+ 
+- fetch_mutual_connections (auth - Get) 
+    - input : 
+            - user_id (String) 
+    - output : 
+            - status 
+            - message 
+            - data : List<ConnectionResource> 
+ 
+- fetch_user_profile (auth - Post) 
+    - action : fetch user profile info 
+    - input : 
+            - user_id (String) 
+    - output : 
+            - status 
+            - message 
+            - data : ProfileResource 
+ 
+ 
+* fetch_user_connections (auth - Get) 
+    - input : 
+            - user_id (String) 
+    - output : 
+            - status 
+            - message 
+            - data : List<ConnectionResource> 
+ 
+ 
+ 
+/////////////////////////////////////////////////////////////////////////////////////////// 
+                                   Mentor 
+/////////////////////////////////////////////////////////////////////////////////////////// 
+ 
++ edit_areas_of_expertise (auth - Post) 
+        - action : edit the areas of expertise of the logged in user 
+        - input : 
+                - areas_of_expertise (List<String>) 
+        - output : 
+                - status 
+                - message 
+                - data : UserResource 
++ remove_area_of_expertise (auth - Post) 
+        - action : remove the areas of expertise of the logged in user 
+        - input : 
+                -  area_of_expertise_id (String) 
+        - output : 
+                - status 
+                - message 
+ 
++ fetch_time_of_day_sessions (auth - Post) 
+        - action : fetch the time of day sessions of the logged in user 
+        - input : 
+                -  date (String) => ex : "2023-07-11" 
+        - output : 
+                - status 
+                - message 
+                - data : List<String> (time_slots) ex : "10:00 AM - 12:00 PM , 02:00 PM - 04:00 PM" 
+ 
+/////////////////////////////////////////////////////////////////////////////////////////// 
+                      Institution Associated People + Interactions 
+/////////////////////////////////////////////////////////////////////////////////////////// 
+ 
+* fetch_institution_recent_people 
+         - action : - fetch people related to the institution (mentors , alumni , employees) 
+                    - most recent 5 people only 
+          - input : 
+                 -  institutionId (String) 
+          - output : 
+                 - status 
+                 - message 
+                 - data :  { 
+                               people :  InstitutionPeopleResource 
+                                mentorsCount :  (int) 
+                                alumniCount : (int) 
+                                employeesCount :  (int) 
+                               } 
+ 
+* fetch_institution_members 
+            - action : - fetch the most 10 members based on the type (mentors , alumni , employees) if query is null 
+                       - search by name if query is not null 
+            - input : 
+                    - institutionId (String) 
+                    - type (String) => 1 - mentors , 2 - alumni , 3 - employees 
+                    - query (String) => search query 
+            - output : 
+                    - status 
+                    - message 
+                    - data :   List<ConnectionResource> 
+ 
+* fetch_institution_recent_Jobs 
+            - action : - fetch the most recent 5 jobs 
+            - input : 
+                    - institutionId (String) 
+            - output : 
+                    - status 
+                    - message 
+                    - data :   List<JobSimpleResource> 
+ 
+* fetch_institution_all_jobs 
+            - action : - fetch all jobs of the institution if query is null 
+                       - search by title if query is not null 
+            - input : 
+                    - institutionId (String) 
+                    - query (String) => search query (optional) 
+            - output : 
+                    - status 
+                    - message 
+                    - data :   List<JobSimpleResource> 
+ 
+* fetch_Job_details 
+            - action : - fetch the details of the job 
+            - input : 
+                    - jobId (String) 
+            - output : 
+                    - status 
+                    - message 
+                    - data :   JobResource 
+ 
+* repost_Job 
+            - action : - repost the job to my feed (public , connections , network) 
+            - input : 
+                    - jobId (String) 
+                    - access (String) => 1 - public , 2 - connections , 3 - network 
+            - output : 
+                    - status 
+                    - message 
+                    - data :   PostResource 
+* undo_repost_Job 
+            - action : - undo repost the job 
+            - input : 
+                    - jobId (String) 
+            - output : 
+                    - status 
+                    - message 
+ 
+ 
+ 
+- InstitutionPeopleResource 
+    - mentors (List<ConnectionResource>) 
+    - alumni (List<ConnectionResource>) 
+    - employees (List<ConnectionResource>) 
+ 
+- JobSimpleResource 
+  - id (String) 
+  - title (String) 
+  - duration (String) => ex : "1 week ago" 
+  - isNew (bool) => true if the job is new (posted in today's date for example) 
+ 
+- JobResource 
+- id (String) 
+- companyName => ex : "Minextstep" 
+- companyImage => ex : "https://minextstep.com/images/logo.png" 
+- companyLocation => ex : "Toronto, Ontario, Canada" 
+- title (String) => ex : "Software Engineer" 
+- duration (String) => ex : "1 week ago" 
+- type (String) =>  1. fullTime , 2. partTime , 3. internship , 4. contract , 5. volunteer , 6. temporary , 8. notSpecified 
+- isVerified (bool) 
+- isNew (bool) => true if the job is new (posted in today's date for example) 
+- role (String) =>  aka : description 
+- technicalSkills => List<String> 
+- interPersonalSkills => List<String> 
+- dayOfWorkDetails => String 
+- companyCulture => String 
+- salaryRange => String ex : "$50,000 - $60,000" 
+- isApplied (bool) 
+- isReposted (bool)   -link (String) => job posting link  
+ 
+ 
+/////////////////////////////////////////////////////////////////////////////////////////// 
+                                 POSTS 
+/////////////////////////////////////////////////////////////////////////////////////////// 
+ 
+ *PostResource* 
+    - int (String) 
+    - text (String) => content of the post 
+    - media (List<MediaResource>) => image or video in the future .. 
+    - external_link (String) => link to external website or youtube video link .. 
+    - owner_id (int) 
+    - owner_name (String) 
+    - owner_job_title (String) 
+    - owner_image (String) 
+    - owner_type (String) => 1 - user , 2 - institution 
+    - tags (List<TagResource>) 
+    - comments_count (int) 
+    - reposts_count (int) 
+    - reacts  (List<ReactResource>) => likes - helpful 
+    - recent_activity  (ActivityResource) => last comment or last repost or last react if exists 
+    - created_at (String) => date of creation 
+    - access (String) => 1 - public , 2 - connections , 3 - network 
+ 
+ 
+     *TagResource* 
+      - id (int) 
+      - title (String) 
+ 
+     *SimpleResource 
+      - id (String) 
+      - title (String) 
+      - subtitle (String - nullable) 
+      - image (String-nullable) 
+ 
+     *ReactResource* (likes - helpful ) 
+      - type (String) => 1 - likes , 2 - helpful , ... so on 
+      - is_reacted (boolean) 
+      - users (List<SimpleResource>) ..  subtitle = job title 
+      - count (int) 
+ 
+      *ActivityResource* 
+      - type (int) => 1 - comment , 2 - repost , 3 - react 
+      - user (SimpleResource) 
+       
+     *CommentResource*  // needs to be updated later 
+        - id (int) 
+        - text (String) 
+        - media (List<MediaResource>) 
+        - user_id (int) 
+        - user_name (String) 
+        - user_job_title (String) 
+        - user_image (String) 
+        - user_type (int) 
+        - created_at (String) 
+        - reacts  (List<ReactResource>) 
+        - replies (List<CommentResource>) 
