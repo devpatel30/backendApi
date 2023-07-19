@@ -97,7 +97,9 @@ module.exports.verifyOTP = async (req, res) => {
         user.auth.isPhoneVerified = true;
       }
       await user.save();
-      return res.status(200).json({ status: true, message: "OTP is valid" });
+      return res
+        .status(200)
+        .json({ status: true, message: "OTP is valid", data: user });
     } else {
       return res
         .status(400)
