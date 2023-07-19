@@ -25,6 +25,17 @@ const userSchema = new Schema({
     profileImage: {
       fileName: String,
     },
+    language: {
+      type: String,
+    },
+    interests: {
+      type: Schema.Types.ObjectId,
+      ref: "Interest",
+    },
+    skills: {
+      type: Schema.Types.ObjectId,
+      ref: "Skill",
+    },
   },
   auth: {
     isEmailVerified: {
@@ -40,23 +51,31 @@ const userSchema = new Schema({
       default: false,
     },
   },
-  school: {
-    type: Schema.Types.ObjectId,
-    ref: "School",
-  },
-  major: {
-    type: Schema.Types.ObjectId,
-    ref: "Major",
-  },
-  startDate: {
-    type: String,
-    default: null,
-  },
-  endDate: {
-    type: String,
-    default: null,
-  },
-  mentors: {
+  education: [
+    {
+      school: {
+        type: Schema.Types.ObjectId,
+        ref: "School",
+      },
+      major: {
+        type: Schema.Types.ObjectId,
+        ref: "Major",
+      },
+      startDate: {
+        type: String,
+        default: null,
+      },
+      endDate: {
+        type: String,
+        default: null,
+      },
+      image: {
+        type: String,
+      },
+    },
+  ],
+
+  mentor: {
     jobTitle: {
       type: Schema.Types.ObjectId,
       ref: "JobTitle",
@@ -65,18 +84,22 @@ const userSchema = new Schema({
       type: Schema.Types.ObjectId,
       ref: "Company",
     },
-    expertise: {
-      type: Schema.Types.ObjectId,
-      ref: "Expertise",
-    },
+    expertise: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Expertise",
+      },
+    ],
     mentorshipStyle: {
       type: Schema.Types.ObjectId,
       ref: "MentorshipStyle",
     },
-    availability: {
-      type: Schema.Types.ObjectId,
-      ref: "Availability",
-    },
+    availability: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Availability",
+      },
+    ],
     emplomentType: {
       type: Schema.Types.ObjectId,
       ref: "EmploymentType",
@@ -84,6 +107,13 @@ const userSchema = new Schema({
     isMentorVerified: {
       type: Boolean,
       default: false,
+    },
+    noOfMentees: {
+      type: Number,
+    },
+    employmentType: {
+      type: Schema.Types.ObjectId,
+      ref: "EmploymentType",
     },
     // required: function () {
     //   return this.userType === "mentor";

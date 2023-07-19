@@ -2,6 +2,9 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const availabilitySchema = new Schema({
+  day: {
+    type: String,
+  },
   startTime: {
     type: String,
   },

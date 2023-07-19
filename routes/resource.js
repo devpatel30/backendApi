@@ -92,7 +92,6 @@ const addData = async (Model, data) => {
         data: null,
       };
     }
-    console.log(data);
     const newEntry = new Model(data);
     await newEntry.save();
     return {
@@ -169,7 +168,7 @@ const updateData = async (Model, id, data) => {
 };
 
 // Function to generate routes for updating data for a given model
-const generateRoutesForModel = (modelName) => {
+const generatePutRoutesForModel = (modelName) => {
   router.put(
     `/${modelName.toLowerCase()}/:id`,
     catchAsync(async (req, res, next) => {
@@ -190,6 +189,57 @@ const generateRoutesForModel = (modelName) => {
 
 // Generate routes for updating data for all models
 for (const modelName in models) {
-  generateRoutesForModel(modelName);
+  generatePutRoutesForModel(modelName);
 }
+// Function to delete data for a specific model
+const deleteData = async (Model, id) => {
+  try {
+    const deletedEntry = await Model.findByIdAndDelete(id);
+    if (!deletedEntry) {
+      return {
+        status: false,
+        message: `${Model.modelName} not found with the given id`,
+        data: null,
+      };
+    }
+
+    return {
+      status: true,
+      message: `${Model.modelName} deleted successfully`,
+      data: deletedEntry,
+    };
+  } catch (e) {
+    return {
+      status: false,
+      message: "Internal server error",
+      error: e,
+    };
+  }
+};
+
+// Function to generate routes for deleting data for a given model
+const generateDeleteRoutesForModel = (modelName) => {
+  router.delete(
+    `/${modelName.toLowerCase()}/:id`,
+    catchAsync(async (req, res, next) => {
+      const Model = models[modelName];
+      if (Model) {
+        const result = await deleteData(Model, req.params.id);
+        res.status(result.status ? 200 : 500).send(result);
+      } else {
+        res.status(404).json({
+          status: false,
+          message: `Model "${modelName}" not found`,
+          data: null,
+        });
+      }
+    })
+  );
+};
+
+// Generate routes for deleting data for all models
+for (const modelName in models) {
+  generateDeleteRoutesForModel(modelName);
+}
+
 module.exports = router;
