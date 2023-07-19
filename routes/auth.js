@@ -53,7 +53,9 @@ router.post(
       user.auth.generatedOtp = false;
       user.save();
       // Password reset successful
-      res.status(200).json({ message: "Password reset successful" });
+      res
+        .status(200)
+        .json({ status: true, message: "Password reset successful" });
     });
   })
 );
@@ -67,7 +69,7 @@ router.post(
       "personalInfo.email": req.session.passport.user,
     });
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({ status: false, message: "User not found" });
     }
 
     // Check if the current password matches
