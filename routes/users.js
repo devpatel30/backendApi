@@ -26,7 +26,7 @@ router.post(
       });
       const regUser = await User.register(user, password);
       // Login the user
-      req.login(regUser, (err) => {
+      req.login(regUser, async (err) => {
         if (err) {
           return next(err);
         }
@@ -37,13 +37,11 @@ router.post(
         return res.status(200).send({
           status: true,
           message: "User created and logged in",
-          data: { regUser, token: token },
+          data: { ...regUser.toObject(), token },
         });
       });
     } catch (e) {
-      res
-        .status(500)
-        .send({ status: false, message: "Server error", error: e.message });
+      res.status(500).send({ status: false, message: e.message, error: e });
     }
   })
 );
@@ -84,7 +82,7 @@ router.post("/login", (req, res, next) => {
       return res.status(200).json({
         status: true,
         message: "Login successful",
-        data: { user, token: req.session.token },
+        data: { ...user.toObject(), token },
       });
     });
   })(req, res, next);
