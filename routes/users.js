@@ -30,10 +30,12 @@ router.post(
         if (err) {
           return next(err);
         }
+        console.log(req.body);
         // sign jwt token
         const token = jwt.sign(user.id, process.env.SESSION_SECRET);
         // Store the token in the session
         req.session.token = token;
+
         return res.status(200).send({
           status: true,
           message: "User created and logged in",
@@ -64,7 +66,7 @@ router.post("/login", (req, res, next) => {
         .json({ status: false, message: "Invalid Credentials" });
     }
     // authentication successful
-    req.logIn(user, (err) => {
+    req.logIn(user, async (err) => {
       if (err) {
         // handle err
         return res.status(500).json({
@@ -79,10 +81,29 @@ router.post("/login", (req, res, next) => {
       // Store the token in the session
       req.session.token = token;
 
+      const userData = await User.findOne({
+        "personalInfo.email": req.body.username,
+      })
+        .populate([
+          "personalInfo.language",
+          "personalInfo.interests",
+          "personalInfo.skills",
+          "education.school",
+          "education.major",
+          "mentor.jobTitle",
+          "mentor.company",
+          "mentor.expertise",
+          "mentor.mentorshipStyle",
+          "mentor.employmentType",
+          "mentor.availability",
+          "institution.creatorInfo.jobTitle",
+          "institution.institution",
+        ])
+        .exec();
       return res.status(200).json({
         status: true,
         message: "Login successful",
-        data: { ...user.toObject(), token },
+        data: { ...userData.toObject(), token: token },
       });
     });
   })(req, res, next);
@@ -118,81 +139,7 @@ router.post(
   })
 );
 
-// // Function to complete user profile
-// const completeUserProfile = async (req, res, next) => {
-//   try {
-//     const {
-//       userType = null,
-//       pronouns = null,
-//       interests = null,
-//       languageId = null,
-//       skills = null,
-//       majorId = null,
-//       schoolId = null,
-//       startDate = null,
-//       endDate = null,
-//       recentJobTitleId = null,
-//       recentCompanyId = null,
-//       areasOfExpertise = null,
-//       mentorshipStyles = null,
-//       noOfMentees = null,
-//       employmentTypeId = null,
-//       availability = null,
-//       jobTitle = null,
-//       employeeId = null,
-//       institutionId = null,
-//       institutionAbout = null,
-//     } = req.body;
-
-//     // get user id from session
-//     const loggedInUserEmail = req.session.passport.user;
-
-//     const user = await User.findOneAndUpdate(
-//       { "personalInfo.email": loggedInUserEmail },
-//       {
-//         $set: {
-//           "personalInfo.userType": userType,
-//           "personalInfo.pronouns": pronouns,
-//           "personalInfo.interests": interests,
-//           "personalInfo.languages": languageId,
-//           "personalInfo.skills": skills,
-//           "education.major": majorId,
-//           "education.school": schoolId,
-//           "education.startDate": startDate,
-//           "education.endDate": endDate,
-//           "mentor.jobTitle": recentJobTitleId,
-//           "mentor.company": recentCompanyId,
-//           "mentor.expertise": areasOfExpertise,
-//           "mentor.mentorshipStyle": mentorshipStyles,
-//           "mentor.noOfMentees": noOfMentees,
-//           "mentor.employmentType": employmentTypeId,
-//           "mentor.availability": availability,
-//           "institution.creatorInfo.jobTitle": jobTitle,
-//           "institution.creatorInfo.employeeId": employeeId,
-//           "institution.institution": institutionId,
-//           "institution.about": institutionAbout,
-//         },
-//       },
-//       { new: true }
-//     );
-//     const updatedUser = await User.findOne({
-//       "personalInfo.email": loggedInUserEmail,
-//     });
-
-//     return res.status(200).json({
-//       status: true,
-//       message: "User profile completed successfully",
-//       data: updatedUser,
-//     });
-//   } catch (e) {
-//     return res.status(500).json({
-//       status: false,
-//       message: e.message,
-//       error: e,
-//     });
-//   }
-// };
-
+// Function to complete user profile
 const completeUserProfile = async (req, res, next) => {
   try {
     const {
@@ -256,7 +203,24 @@ const completeUserProfile = async (req, res, next) => {
         },
       },
       { new: true }
-    );
+    )
+      .populate([
+        "personalInfo.language",
+        "personalInfo.interests",
+        "personalInfo.skills",
+        "education.school",
+        "education.major",
+        "mentor.jobTitle",
+        "mentor.company",
+        "mentor.expertise",
+        "mentor.mentorshipStyle",
+        "mentor.employmentType",
+        "mentor.availability",
+        "institution.creatorInfo.jobTitle",
+        "institution.institution",
+        "education.school.majors",
+      ])
+      .exec();
 
     return res.status(200).json({
       status: true,

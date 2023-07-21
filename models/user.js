@@ -26,7 +26,8 @@ const userSchema = new Schema({
       fileName: String,
     },
     language: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "Language",
     },
     interests: {
       type: Schema.Types.ObjectId,
