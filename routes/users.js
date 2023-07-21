@@ -261,7 +261,7 @@ const completeUserProfile = async (req, res, next) => {
     return res.status(200).json({
       status: true,
       message: "User profile completed successfully",
-      data: user.toObject(),
+      data: { ...user.toObject(), token: req.session.token },
     });
   } catch (e) {
     return res.status(500).json({
