@@ -43,7 +43,7 @@ const fetchData = async (Model) => {
       };
     } else {
       return {
-        status: false,
+        status: true,
         message: "Database is empty",
         data: [],
       };
@@ -65,7 +65,7 @@ const generateGetRoutesForModel = (modelName) => {
       const Model = models[modelName];
       if (Model) {
         const result = await fetchData(Model);
-        res.status(result.status ? 200 : 404).send(result);
+        res.status(result.status ? 200 : 200).send(result);
       } else {
         res.status(404).json({
           status: false,

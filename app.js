@@ -64,7 +64,7 @@ app.use("/auth", authRoutes);
 app.use("/resource", resourceRoutes);
 app.all("*", (req, res, next) => {
   //   next(new ExpressError("Page Not Found", 404));
-  res.status(404).json({ message: "Page not found" });
+  res.status(404).json({ status: false, message: "Page not found" });
 });
 //err handler
 app.use((err, req, res, next) => {
@@ -72,5 +72,5 @@ app.use((err, req, res, next) => {
   if (!err.message) {
     err.message = "Something went wrong";
   }
-  res.status(status).send({ error: { err } });
+  res.status(status).json({ status: false, error: { err } });
 });

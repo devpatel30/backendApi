@@ -50,6 +50,10 @@ const userSchema = new Schema({
       type: Boolean,
       default: false,
     },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
   },
   education: [
     {
@@ -90,10 +94,12 @@ const userSchema = new Schema({
         ref: "Expertise",
       },
     ],
-    mentorshipStyle: {
-      type: Schema.Types.ObjectId,
-      ref: "MentorshipStyle",
-    },
+    mentorshipStyle: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "MentorshipStyle",
+      },
+    ],
     availability: [
       {
         type: Schema.Types.ObjectId,
@@ -104,16 +110,18 @@ const userSchema = new Schema({
       type: Schema.Types.ObjectId,
       ref: "EmploymentType",
     },
-    isMentorVerified: {
-      type: Boolean,
-      default: false,
-    },
     noOfMentees: {
       type: Number,
     },
     employmentType: {
       type: Schema.Types.ObjectId,
       ref: "EmploymentType",
+    },
+    mentorTimeDuration: {
+      type: Number,
+    },
+    currentMentees: {
+      type: Number,
     },
     // required: function () {
     //   return this.userType === "mentor";

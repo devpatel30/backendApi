@@ -32,7 +32,7 @@ router.get("/user", (req, res) => {
       message: "user must be logged in for getting user data",
     });
   } else {
-    res.status(200).json({ ststus: true, message: req.session.passport });
+    res.status(200).json({ status: true, message: req.session.passport });
   }
 });
 
