@@ -141,12 +141,12 @@ const userSchema = new Schema({
       type: Schema.Types.ObjectId,
       ref: "Company",
     },
-    about: {
-      type: String,
-    },
     // required: function () {
     //   return this.userType === "institution";
     // },
+  },
+  about: {
+    type: String,
   },
   invitationCode: {
     type: Schema.Types.ObjectId,
