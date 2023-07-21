@@ -217,7 +217,6 @@ const completeUserProfile = async (req, res, next) => {
       institution = null,
       about = null,
     } = req.body;
-    console.log(req.body);
 
     const loggedInUserEmail = req.session.passport.user;
     const user = await User.findOneAndUpdate(
@@ -252,8 +251,8 @@ const completeUserProfile = async (req, res, next) => {
               employeeId: employeeId,
             },
             institution: institution,
-            about: about,
           },
+          about: about,
         },
       },
       { new: true }
