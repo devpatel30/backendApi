@@ -16,5 +16,9 @@ const mediaSchema = new Schema({
     },
   ],
 });
+mediaSchema.pre(/^find/, function (next) {
+  this.populate("taggedUsers");
+  next();
+});
 
 module.exports = mongoose.model("Media", mediaSchema);

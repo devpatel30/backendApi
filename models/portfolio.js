@@ -22,5 +22,9 @@ const portfolioSchema = new Schema({
     },
   ],
 });
+portfolioSchema.pre(/^find/, function (next) {
+  this.populate(["thumbnail", "images"]);
+  next();
+});
 
 module.exports = mongoose.model("Portfolio", portfolioSchema);
