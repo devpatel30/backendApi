@@ -13,4 +13,8 @@ const schoolSchema = new Schema({
   ],
 });
 
+schoolSchema.pre(/^find/, function (next) {
+  this.populate("majors");
+  next();
+});
 module.exports = mongoose.model("School", schoolSchema);
