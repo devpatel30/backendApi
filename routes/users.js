@@ -80,30 +80,10 @@ router.post("/login", (req, res, next) => {
       const token = jwt.sign(user.id, process.env.SESSION_SECRET);
       // Store the token in the session
       req.session.token = token;
-
-      const userData = await User.findOne({
-        "personalInfo.email": req.body.username,
-      })
-        .populate([
-          "personalInfo.language",
-          "personalInfo.interests",
-          "personalInfo.skills",
-          "education.school",
-          "education.major",
-          "mentor.jobTitle",
-          "mentor.company",
-          "mentor.expertise",
-          "mentor.mentorshipStyle",
-          "mentor.employmentType",
-          "mentor.availability",
-          "institution.creatorInfo.jobTitle",
-          "institution.institution",
-        ])
-        .exec();
       return res.status(200).json({
         status: true,
         message: "Login successful",
-        data: { ...userData.toObject(), token: token },
+        data: { ...user.toObject(), token: token },
       });
     });
   })(req, res, next);
@@ -203,24 +183,7 @@ const completeUserProfile = async (req, res, next) => {
         },
       },
       { new: true }
-    )
-      .populate([
-        "personalInfo.language",
-        "personalInfo.interests",
-        "personalInfo.skills",
-        "education.school",
-        "education.major",
-        "mentor.jobTitle",
-        "mentor.company",
-        "mentor.expertise",
-        "mentor.mentorshipStyle",
-        "mentor.employmentType",
-        "mentor.availability",
-        "institution.creatorInfo.jobTitle",
-        "institution.institution",
-        "education.school.majors",
-      ])
-      .exec();
+    );
 
     return res.status(200).json({
       status: true,

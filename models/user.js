@@ -25,18 +25,24 @@ const userSchema = new Schema({
     profileImage: {
       fileName: String,
     },
-    language: {
-      type: Schema.Types.ObjectId,
-      ref: "Language",
-    },
-    interests: {
-      type: Schema.Types.ObjectId,
-      ref: "Interest",
-    },
-    skills: {
-      type: Schema.Types.ObjectId,
-      ref: "Skill",
-    },
+    language: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Language",
+      },
+    ],
+    interests: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Interest",
+      },
+    ],
+    skills: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Skill",
+      },
+    ],
   },
   auth: {
     isEmailVerified: {
@@ -107,10 +113,6 @@ const userSchema = new Schema({
         ref: "Availability",
       },
     ],
-    emplomentType: {
-      type: Schema.Types.ObjectId,
-      ref: "EmploymentType",
-    },
     noOfMentees: {
       type: Number,
     },
@@ -158,4 +160,22 @@ userSchema.plugin(passportLocalMongoose, {
   usernameField: "personalInfo.email",
 });
 
+userSchema.pre(/^find/, function (next) {
+  this.populate([
+    "personalInfo.language",
+    "personalInfo.interests",
+    "personalInfo.skills",
+    "education.school",
+    "education.major",
+    "mentor.jobTitle",
+    "mentor.company",
+    "mentor.expertise",
+    "mentor.mentorshipStyle",
+    "mentor.employmentType",
+    "mentor.availability",
+    "institution.creatorInfo.jobTitle",
+    "institution.institution",
+  ]);
+  next();
+});
 module.exports = mongoose.model("User", userSchema);

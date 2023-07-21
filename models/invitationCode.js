@@ -10,5 +10,8 @@ const invitationCodeSchema = new Schema({
     ref: "User",
   },
 });
-
+invitationCodeSchema.pre(/^find/, function (next) {
+  this.populate("createdBy");
+  next();
+});
 module.exports = mongoose.model("InvitationCode", invitationCodeSchema);

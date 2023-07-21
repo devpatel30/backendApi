@@ -12,5 +12,8 @@ const interestSchema = new Schema({
     },
   ],
 });
-
+interestSchema.pre(/^find/, function (next) {
+  this.populate("skill");
+  next();
+});
 module.exports = mongoose.model("Interest", interestSchema);
