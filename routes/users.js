@@ -7,11 +7,14 @@ const router = express.Router();
 const passport = require("passport");
 const sgMail = require("@sendgrid/mail");
 const jwt = require("jsonwebtoken");
+const crypto = require("node:crypto");
 
 const User = require("../models/user");
+const Waitlist = require("../models/waitlist");
 
 const catchAsync = require("../utils/catchAsync");
 const { isLoggedIn, createEmailMessage } = require("../middleware/utils");
+const { exit } = require("node:process");
 
 // signup
 router.post(
@@ -47,7 +50,30 @@ router.post(
     }
   })
 );
-
+router.post(
+  "/check-email",
+  catchAsync(async (req, res, next) => {
+    try {
+      const { email } = req.body;
+      if (email === "") {
+        res.status(200).json({ status: false, message: "No email entered" });
+        return;
+      }
+      const emailExists = await User.findOne({ "personalInfo.email": email });
+      if (emailExists) {
+        res
+          .status(200)
+          .json({ status: false, message: "Email already exists" });
+      } else {
+        res
+          .status(200)
+          .json({ status: true, message: "User can register with this email" });
+      }
+    } catch (e) {
+      res.status(500).json({ status: true, message: e.message, error: e });
+    }
+  })
+);
 // login
 router.post("/login", (req, res, next) => {
   passport.authenticate("local", (err, user, info) => {
@@ -61,7 +87,7 @@ router.post("/login", (req, res, next) => {
     }
     if (!user) {
       // authentication failed
-      return res
+      return resgit
         .status(200)
         .json({ status: false, message: "Invalid Credentials" });
     }
@@ -71,8 +97,8 @@ router.post("/login", (req, res, next) => {
         // handle err
         return res.status(500).json({
           status: false,
-          message: "Internal Server Error",
-          error: err.message,
+          message: err.message,
+          error: err,
         });
       }
       // User found
@@ -202,4 +228,60 @@ router.post("/complete-profile", isLoggedIn, completeUserProfile);
 
 router.post("/update-profile/:userId", isLoggedIn, completeUserProfile);
 
+//  Function to generate a random alphanumeric code of a specific length
+const generateInvitationCode = (length) => {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const codeArray = [];
+  const charLength = chars.length;
+
+  for (let i = 0; i < length; i++) {
+    const randomIndex = crypto.randomInt(0, charLength);
+    codeArray.push(chars.charAt(randomIndex));
+  }
+
+  return codeArray.join("");
+};
+
+router.get("/generate-invitation-code", (req, res) => {
+  try {
+    const codeLength = 12;
+    const invitationCode = generateInvitationCode(codeLength);
+
+    return res.status(200).json({
+      status: true,
+      message: "Invitation code generated successfully",
+      code: invitationCode,
+    });
+  } catch (error) {
+    console.error("Error generating invitation code:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
+// waitlist people with no invitation code
+router.post(
+  "/waitlist",
+  catchAsync(async (req, res, next) => {
+    try {
+      const { email } = req.body;
+      const emailExists = await Waitlist.findOne({ email });
+      if (emailExists) {
+        res
+          .status(200)
+          .json({ status: false, message: "User already in waitlist" });
+      } else {
+        const waitlist = new Waitlist({ email });
+        await waitlist.save();
+        res.status(200).json({ status: true, message: waitlist });
+      }
+    } catch (e) {
+      res.status(500).json({ status: false, message: e.message, error: e });
+    }
+  })
+);
 module.exports = router;
