@@ -117,9 +117,18 @@ const userSchema = new Schema({
       type: Number,
     },
     employmentType: {
-      type: Schema.Types.ObjectId,
-      ref: "EmploymentType",
+      type: String,
+      enum: [
+        "fullTime",
+        "partTime",
+        "internship",
+        "contract",
+        "freelance",
+        "temporary",
+        "selfEmployed",
+      ],
     },
+
     mentorTimeDuration: {
       type: Number,
     },
@@ -171,7 +180,6 @@ userSchema.pre(/^find/, function (next) {
     "mentor.company",
     "mentor.expertise",
     "mentor.mentorshipStyle",
-    "mentor.employmentType",
     "mentor.availability",
     "institution.creatorInfo.jobTitle",
     "institution.institution",
