@@ -14,7 +14,6 @@ const Waitlist = require("../models/waitlist");
 
 const catchAsync = require("../utils/catchAsync");
 const { isLoggedIn, createEmailMessage } = require("../middleware/utils");
-const { exit } = require("node:process");
 
 // signup
 router.post(
@@ -33,13 +32,13 @@ router.post(
         if (err) {
           return next(err);
         }
-        console.log(req.body);
+        // console.log(req.body);
         // sign jwt token
         const token = jwt.sign(user.id, process.env.SESSION_SECRET);
         // Store the token in the session
         req.session.token = token;
 
-        return res.status(200).send({
+        return res.status(200).json({
           status: true,
           message: "User created and logged in",
           data: { ...regUser.toObject(), token },
@@ -63,14 +62,16 @@ router.post(
       if (emailExists) {
         res
           .status(200)
-          .json({ status: false, message: "Email already exists" });
+          .json({ status: false, message: "Email already exists", data: true });
       } else {
-        res
-          .status(200)
-          .json({ status: true, message: "User can register with this email" });
+        res.status(200).json({
+          status: true,
+          message: "User can register with this email",
+          data: false,
+        });
       }
     } catch (e) {
-      res.status(500).json({ status: true, message: e.message, error: e });
+      res.status(500).json({ status: false, message: e.message, error: e });
     }
   })
 );
@@ -154,6 +155,8 @@ const completeUserProfile = async (req, res, next) => {
       interests = null,
       skills = null,
       language = null,
+      firstName = null,
+      lastName = null,
       major = null,
       school = null,
       startDate = null,
@@ -181,6 +184,8 @@ const completeUserProfile = async (req, res, next) => {
           "personalInfo.interests": interests,
           "personalInfo.skills": skills,
           "personalInfo.language": language,
+          "personalInfo.firstName": firstName,
+          "personalInfo.lastName": lastName,
           education: [
             {
               school: school,
@@ -228,41 +233,6 @@ router.post("/complete-profile", isLoggedIn, completeUserProfile);
 
 router.post("/update-profile/:userId", isLoggedIn, completeUserProfile);
 
-//  Function to generate a random alphanumeric code of a specific length
-const generateInvitationCode = (length) => {
-  const chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  const codeArray = [];
-  const charLength = chars.length;
-
-  for (let i = 0; i < length; i++) {
-    const randomIndex = crypto.randomInt(0, charLength);
-    codeArray.push(chars.charAt(randomIndex));
-  }
-
-  return codeArray.join("");
-};
-
-router.get("/generate-invitation-code", (req, res) => {
-  try {
-    const codeLength = 12;
-    const invitationCode = generateInvitationCode(codeLength);
-
-    return res.status(200).json({
-      status: true,
-      message: "Invitation code generated successfully",
-      code: invitationCode,
-    });
-  } catch (error) {
-    console.error("Error generating invitation code:", error);
-    return res.status(500).json({
-      status: false,
-      message: "Internal server error",
-      error: error.message,
-    });
-  }
-});
-
 // waitlist people with no invitation code
 router.post(
   "/waitlist",
@@ -277,7 +247,11 @@ router.post(
       } else {
         const waitlist = new Waitlist({ email });
         await waitlist.save();
-        res.status(200).json({ status: true, message: waitlist });
+        res.status(200).json({
+          status: true,
+          message: "User added to waitlist",
+          data: waitlist,
+        });
       }
     } catch (e) {
       res.status(500).json({ status: false, message: e.message, error: e });

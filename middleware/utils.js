@@ -1,5 +1,6 @@
 const Otp = require("../models/otp");
 const crypto = require("node:crypto");
+const { v4: uuidv4 } = require("uuid");
 
 module.exports.isLoggedIn = (req, res, next) => {
   if (!req.isAuthenticated()) {
@@ -48,4 +49,10 @@ module.exports.generateOtp = async (req, res, next) => {
       error: error.message,
     });
   }
+};
+
+// Function to generate a unique invitation code using UUID v4
+module.exports.generateInvitationCode = () => {
+  const invitationCode = uuidv4().replace(/-/g, "").substring(0, 8);
+  return invitationCode;
 };
