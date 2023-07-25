@@ -45,6 +45,16 @@ module.exports.saveAndSendOtp = async (req, res, next) => {
       { $set: { "auth.generatedOtp": true } },
       { new: true }
     );
+    // if (!user) {
+    //   res
+    //     .status(200)
+    //     .json({
+    //       status: false,
+    //       message: `User with ${contact} does not exist`,
+    //     });
+    // }
+    // console.log(user);
+
     // Email body for OTP
     const subject = "Email verification OTP";
     const text = `Your otp is ${generatedOtp.otp}`;

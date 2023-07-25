@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 const passportLocalMongoose = require("passport-local-mongoose");
+const { generateInvitationCode } = require("../middleware/utils");
+const InvitationCode = require("./invitationCode");
 
 const userSchema = new Schema({
   personalInfo: {
@@ -183,7 +185,31 @@ userSchema.pre(/^find/, function (next) {
     "mentor.availability",
     "institution.creatorInfo.jobTitle",
     "institution.institution",
+    // "invitationCode",
   ]);
   next();
 });
+
+// Pre-save hook for institution user
+userSchema.pre("save", async function (next) {
+  try {
+    // Generate a unique invitation code using UUID v4
+    const invitationCode = generateInvitationCode();
+
+    // Create a new InvitationCode instance and save it
+    const newInvitationCode = new InvitationCode({
+      invitationCode: invitationCode,
+      createdBy: this._id,
+    });
+    await newInvitationCode.save();
+
+    // Link the invitation code to the userSchema
+    this.invitationCode = newInvitationCode._id;
+
+    next(); // Continue with the save operation
+  } catch (err) {
+    next(err); // Pass the error to the next middleware
+  }
+});
+
 module.exports = mongoose.model("User", userSchema);
