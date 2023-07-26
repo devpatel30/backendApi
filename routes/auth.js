@@ -16,7 +16,7 @@ router.post("/forgot-password", generateOtp, catchAsync(saveAndSendOtp));
 // verify otp
 router.post("/verify-otp", verifyOTP);
 
-router.post(
+router.get(
   "/verify-email",
   isLoggedIn,
   generateOtp,
