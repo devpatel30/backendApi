@@ -10,13 +10,44 @@ const jwt = require("jsonwebtoken");
 
 const User = require("../models/user");
 const Waitlist = require("../models/waitlist");
+const InvitationCode = require("../models/invitationCode");
 
 const catchAsync = require("../utils/catchAsync");
 const { isLoggedIn, createEmailMessage } = require("../middleware/utils");
 const { signUpUser } = require("../controllers/userControllers");
 
 // signup
-router.post("/signup", catchAsync(signUpUser));
+router.post(
+  "/signup",
+  catchAsync(async (req, res, next) => {
+    try {
+      const { userType, email, password } = req.body;
+      const username = email;
+      const user = new User({
+        personalInfo: { userType, email },
+        username,
+      });
+      const regUser = await User.register(user, password);
+      // Login the user
+      req.login(regUser, async (err) => {
+        if (err) {
+          return next(err);
+        }
+        return res.status(200).json({
+          status: true,
+          message: "User created and logged in",
+          data: {
+            ...regUser.toObject(),
+            sessionid: req.headers,
+            sID: req.sessionID,
+          },
+        });
+      });
+    } catch (e) {
+      res.status(500).send({ status: false, message: e.message, error: e });
+    }
+  })
+);
 router.post(
   "/check-email",
   catchAsync(async (req, res, next) => {
@@ -232,7 +263,25 @@ router.post(
 // check invitation code
 router.post(
   "/check-invitation-code",
-  catchAsync(async (req, res, next) => {})
+  catchAsync(async (req, res, next) => {
+    try {
+      const { invitationCode } = req.body;
+      const codeExists = await InvitationCode.findOne({ invitationCode });
+      if (codeExists) {
+        res
+          .status(200)
+          .json({ status: true, message: "Valid invitation code", data: true });
+      } else {
+        res.status(200).json({
+          status: false,
+          message: "Invalid invitation code",
+          data: true,
+        });
+      }
+    } catch (e) {
+      res.status(500).json({ status: false, message: e.message, error: e });
+    }
+  })
 );
 
 module.exports = router;
