@@ -33,7 +33,7 @@ module.exports.signUpUser = async (req, res, next) => {
       //   const token = jwt.sign(req.sessionID, process.env.SESSION_SECRET);
       // Store the token in the session
       //   req.session.token = token;
-      const token = req.sessionID;
+      const token = req.headers.cookie;
       //   const sessionId = ;
       return res.status(200).json({
         status: true,

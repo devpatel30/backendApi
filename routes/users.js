@@ -75,7 +75,7 @@ router.post("/login", (req, res, next) => {
       // const token = jwt.sign(user.id, process.env.SESSION_SECRET);
       // // Store the token in the session
       // req.session.token = token;
-      const token = req.sessionID;
+      const token = req.headers.cookie;
 
       return res.status(200).json({
         status: true,
@@ -189,7 +189,7 @@ const completeUserProfile = async (req, res, next) => {
     return res.status(200).json({
       status: true,
       message: "User profile completed successfully",
-      data: { ...user.toObject(), token: req.sessionID },
+      data: { ...user.toObject(), token: req.headers.cookie },
     });
   } catch (e) {
     return res.status(500).json({
@@ -227,6 +227,12 @@ router.post(
       res.status(500).json({ status: false, message: e.message, error: e });
     }
   })
+);
+
+// check invitation code
+router.post(
+  "/check-invitation-code",
+  catchAsync(async (req, res, next) => {})
 );
 
 module.exports = router;
