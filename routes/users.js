@@ -72,9 +72,11 @@ router.post("/login", (req, res, next) => {
       }
       // User found
       // sign jwt token
-      const token = jwt.sign(user.id, process.env.SESSION_SECRET);
-      // Store the token in the session
-      req.session.token = token;
+      // const token = jwt.sign(user.id, process.env.SESSION_SECRET);
+      // // Store the token in the session
+      // req.session.token = token;
+      const token = req.sessionID;
+
       return res.status(200).json({
         status: true,
         message: "Login successful",
@@ -187,7 +189,7 @@ const completeUserProfile = async (req, res, next) => {
     return res.status(200).json({
       status: true,
       message: "User profile completed successfully",
-      data: { ...user.toObject(), token: req.session.token },
+      data: { ...user.toObject(), token: req.sessionID },
     });
   } catch (e) {
     return res.status(500).json({
