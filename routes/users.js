@@ -7,6 +7,14 @@ const router = express.Router();
 const passport = require("passport");
 const sgMail = require("@sendgrid/mail");
 const jwt = require("jsonwebtoken");
+const multer = require("multer");
+const {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const crypto = require("node:crypto");
 
 const User = require("../models/user");
 const Waitlist = require("../models/waitlist");
@@ -275,7 +283,7 @@ router.post(
         res.status(200).json({
           status: false,
           message: "Invalid invitation code",
-          data: true,
+          data: false,
         });
       }
     } catch (e) {
@@ -284,4 +292,77 @@ router.post(
   })
 );
 
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+const randomImageName = (bytes = 32) =>
+  crypto.randomBytes(bytes).toString("hex");
+
+const s3BucketName = process.env.S3BUCKET_NAME;
+const s3BucketRegion = process.env.S3BUCKET_REGION;
+const s3AccessKey = process.env.S3_ACCESS_KEY;
+const s3SecretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
+
+const s3 = new S3Client({
+  credentials: {
+    accessKeyId: s3AccessKey,
+    secretAccessKey: s3SecretAccessKey,
+  },
+  region: s3BucketRegion,
+});
+router.post(
+  "/profile-image",
+  isLoggedIn,
+  upload.single("image"),
+  catchAsync(async (req, res, next) => {
+    const userId = req.user.id;
+    console.log(req.body);
+    console.log(req.file);
+    const imageName = randomImageName();
+    const params = {
+      Bucket: s3BucketName,
+      Key: imageName,
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype,
+    };
+    const command = new PutObjectCommand(params);
+    await s3.send(command);
+
+    const user = await User.findOneAndUpdate(
+      { _id: userId },
+      {
+        $set: {
+          "personalInfo.profileImage": {
+            fileName: imageName,
+          },
+        },
+      },
+      { new: true }
+    );
+    res.send(user);
+  })
+);
+router.get(
+  "/profile-image",
+  isLoggedIn,
+  catchAsync(async (req, res, next) => {
+    try {
+      const userId = req.contact;
+      const user = await User.findOne({ "personalInfo.email": userId });
+      const getObjectParams = {
+        Bucket: s3BucketName,
+        Key: user.personalInfo.profileImage.fileName,
+      };
+      const command = new GetObjectCommand(getObjectParams);
+      const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+      res.status(200).json({
+        status: true,
+        message: "Access link to image made valid for 3600s",
+        data: url,
+      });
+    } catch (e) {
+      res.status(500).json({ status: false, message: e.message, error: e });
+    }
+  })
+);
 module.exports = router;
