@@ -88,7 +88,7 @@ router.post("/login", (req, res, next) => {
     }
     if (!user) {
       // authentication failed
-      return resgit
+      return res
         .status(200)
         .json({ status: false, message: "Invalid Credentials" });
     }
