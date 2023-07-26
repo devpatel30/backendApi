@@ -33,11 +33,11 @@ module.exports.signUpUser = async (req, res, next) => {
       const token = jwt.sign(user.id, process.env.SESSION_SECRET);
       // Store the token in the session
       req.session.token = token;
-
+      const sessionId = req.sessionID;
       return res.status(200).json({
         status: true,
         message: "User created and logged in",
-        data: { ...regUser.toObject(), token },
+        data: { ...regUser.toObject(), token, sessionId },
       });
     });
   } catch (e) {
