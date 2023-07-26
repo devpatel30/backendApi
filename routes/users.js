@@ -7,7 +7,6 @@ const router = express.Router();
 const passport = require("passport");
 const sgMail = require("@sendgrid/mail");
 const jwt = require("jsonwebtoken");
-const crypto = require("node:crypto");
 
 const User = require("../models/user");
 const Waitlist = require("../models/waitlist");
@@ -258,4 +257,5 @@ router.post(
     }
   })
 );
+
 module.exports = router;
