@@ -15,6 +15,7 @@ const {
 } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const crypto = require("node:crypto");
+const memoryCache = require("memory-cache");
 
 const User = require("../models/user");
 const Waitlist = require("../models/waitlist");
@@ -238,7 +239,7 @@ const completeUserProfile = async (req, res, next) => {
     });
   }
 };
-router.post("/complete-profile", isLoggedIn, completeUserProfile);
+router.post("/complete-profile", completeUserProfile);
 
 router.post("/update-profile/:userId", isLoggedIn, completeUserProfile);
 
@@ -339,7 +340,22 @@ router.post(
       },
       { new: true }
     );
-    res.send(user);
+    const generatedUrl = memoryCache.get("generatedUrl");
+    console.log(generatedUrl);
+    if (generatedUrl) {
+      res.status(200).json({
+        status: true,
+        message:
+          "Successfully uploaded image and link to access the image is provided",
+        data: { user, generatedUrl },
+      });
+    } else {
+      res.status(200).json({
+        status: true,
+        message: "Successfully uploaded image",
+        data: { user },
+      });
+    }
   })
 );
 router.get(
