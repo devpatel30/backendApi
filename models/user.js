@@ -39,6 +39,9 @@ const userSchema = new Schema({
     profileImage: {
       fileName: String,
     },
+    profileImageLink: {
+      type: String,
+    },
     language: [
       {
         type: Schema.Types.ObjectId,
@@ -221,41 +224,6 @@ userSchema.pre("save", async function (next) {
     next(); // Continue with the save operation
   } catch (err) {
     next(err); // Pass the error to the next middleware
-  }
-});
-
-const s3BucketName = process.env.S3BUCKET_NAME;
-const s3BucketRegion = process.env.S3BUCKET_REGION;
-const s3AccessKey = process.env.S3_ACCESS_KEY;
-const s3SecretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
-const s3 = new S3Client({
-  credentials: {
-    accessKeyId: s3AccessKey,
-    secretAccessKey: s3SecretAccessKey,
-  },
-  region: s3BucketRegion,
-});
-
-userSchema.pre("save", async function (next) {
-  try {
-    if (this.isModified("personalInfo.profileImage.fileName")) {
-      const fileName = this.personalInfo.profileImage.fileName;
-      console.log(fileName);
-      if (fileName == undefined) {
-        next();
-      }
-      const getObjectParams = {
-        Bucket: s3BucketName,
-        Key: this.personalInfo.profileImage.fileName,
-      };
-      const command = new GetObjectCommand(getObjectParams);
-      const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
-      memoryCache.put("generatedUrl", url, 3600000);
-    } else {
-      next();
-    }
-  } catch (err) {
-    next(err);
   }
 });
 

@@ -241,18 +241,6 @@ module.exports.uploadImage = async (req, res, next) => {
   };
   const command = new PutObjectCommand(params);
   await s3.send(command);
-
-  const user = await User.findOneAndUpdate(
-    { _id: userId },
-    {
-      $set: {
-        "personalInfo.profileImage": {
-          fileName: imageName,
-        },
-      },
-    },
-    { new: true }
-  );
   // Generate the URL for the uploaded image
   const getObjectParams = {
     Bucket: s3BucketName,
@@ -261,10 +249,23 @@ module.exports.uploadImage = async (req, res, next) => {
   const getCommand = new GetObjectCommand(getObjectParams);
   const imageUrl = await getSignedUrl(s3, getCommand, { expiresIn: 604800 });
 
+  const user = await User.findOneAndUpdate(
+    { _id: userId },
+    {
+      $set: {
+        "personalInfo.profileImage": {
+          fileName: imageName,
+        },
+        "personalInfo.profileImageLink": imageUrl,
+      },
+    },
+    { new: true }
+  );
+
   res.status(200).json({
     status: true,
     message: "Successfully uploaded image",
-    data: { token: req.headers.authorization, imageUrl },
+    data: { ...user.toObject(), token: req.headers.authorization },
   });
 };
 
