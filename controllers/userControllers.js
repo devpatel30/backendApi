@@ -232,8 +232,6 @@ const s3 = new S3Client({
 
 module.exports.uploadImage = async (req, res, next) => {
   const userId = req.user.id;
-  console.log(req.body);
-  console.log(req.file);
   const imageName = randomImageName();
   const params = {
     Bucket: s3BucketName,
@@ -255,20 +253,37 @@ module.exports.uploadImage = async (req, res, next) => {
     },
     { new: true }
   );
-  const generatedUrl = memoryCache.get("generatedUrl");
-  console.log(generatedUrl);
-  if (generatedUrl) {
+  // Generate the URL for the uploaded image
+  const getObjectParams = {
+    Bucket: s3BucketName,
+    Key: imageName,
+  };
+  const getCommand = new GetObjectCommand(getObjectParams);
+  const imageUrl = await getSignedUrl(s3, getCommand, { expiresIn: 604800 });
+
+  res.status(200).json({
+    status: true,
+    message: "Successfully uploaded image",
+    data: { token: req.headers.authorization, imageUrl },
+  });
+};
+
+module.exports.getImageLink = async (req, res, next) => {
+  try {
+    const username = req.user.personalInfo.email;
+    const user = await User.findOne({ "personalInfo.email": username });
+    const getObjectParams = {
+      Bucket: s3BucketName,
+      Key: user.personalInfo.profileImage.fileName,
+    };
+    const command = new GetObjectCommand(getObjectParams);
+    const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
     res.status(200).json({
       status: true,
-      message:
-        "Successfully uploaded image and link to access the image is provided",
-      data: { user, generatedUrl },
+      message: "Access link to image made valid for 3600s",
+      data: url,
     });
-  } else {
-    res.status(200).json({
-      status: true,
-      message: "Successfully uploaded image",
-      data: { user },
-    });
+  } catch (e) {
+    res.status(500).json({ status: false, message: e.message, error: e });
   }
 };
