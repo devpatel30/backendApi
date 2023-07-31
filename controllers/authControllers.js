@@ -4,7 +4,7 @@ if (process.env.NODE_ENV !== "production") {
 
 const sgMail = require("@sendgrid/mail");
 
-const User = require("../models/user");
+const { User } = require("../models");
 const Otp = require("../models/otp");
 
 const { createEmailMessage } = require("../middleware/utils");
@@ -122,4 +122,64 @@ module.exports.verifyOTP = async (req, res) => {
       error: e.message,
     });
   }
+};
+
+module.exports.resetPassword = async (req, res, next) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ "personalInfo.email": email });
+  if (user.auth.generatedOtp === false) {
+    return res.status(400).json({
+      status: false,
+      message: "Password reset not possible without otp verification",
+    });
+  }
+  // Update the user's password
+  user.setPassword(password, () => {
+    user.auth.generatedOtp = false;
+    user.save();
+    // Password reset successful
+    res
+      .status(200)
+      .json({ status: true, message: "Password reset successful" });
+  });
+};
+
+module.exports.editPassword = async (req, res, next) => {
+  const { currentPassword, newPassword } = req.body;
+  const user = await User.findOne({
+    "personalInfo.email": req.session.passport.user,
+  });
+  if (!user) {
+    return res.status(404).json({ status: false, message: "User not found" });
+  }
+
+  // Check if the current password matches
+  const isMatch = await user.authenticate(currentPassword);
+  if (!isMatch.user) {
+    return res.status(401).json({
+      status: false,
+      message: "Current password is incorrect",
+      error: isMatch.error,
+    });
+  }
+  // do not update if new and current password are same
+  if (newPassword === currentPassword) {
+    return res.status(401).json({
+      status: false,
+      message: "New password is same as current password",
+    });
+  }
+  // Update the user's password
+  user.setPassword(newPassword, async () => {
+    try {
+      // Save the updated user document
+      await user.save();
+
+      // Password update successful
+      res.status(200).json({ message: "Password updated successfully" });
+    } catch (e) {
+      // Handle any errors that occur during saving
+      res.status(500).json({ message: "Internal server error", error: e });
+    }
+  });
 };

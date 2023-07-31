@@ -17,46 +17,24 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const crypto = require("node:crypto");
 const memoryCache = require("memory-cache");
 
-const User = require("../models/user");
+const { User } = require("../models");
 const Waitlist = require("../models/waitlist");
 const InvitationCode = require("../models/invitationCode");
 
 const catchAsync = require("../utils/catchAsync");
 const { isLoggedIn, createEmailMessage } = require("../middleware/utils");
-const { signUpUser } = require("../controllers/userControllers");
+
+const {
+  signUpUser,
+  loginUser,
+  waitlistUser,
+  checkInvititationCode,
+  completeUserProfile,
+} = require("../controllers/userControllers");
+require("../config/appAuth");
 
 // signup
-router.post(
-  "/signup",
-  catchAsync(async (req, res, next) => {
-    try {
-      const { userType, email, password } = req.body;
-      const username = email;
-      const user = new User({
-        personalInfo: { userType, email },
-        username,
-      });
-      const regUser = await User.register(user, password);
-      // Login the user
-      req.login(regUser, async (err) => {
-        if (err) {
-          return next(err);
-        }
-        return res.status(200).json({
-          status: true,
-          message: "User created and logged in",
-          data: {
-            ...regUser.toObject(),
-            sessionid: req.headers,
-            sID: req.sessionID,
-          },
-        });
-      });
-    } catch (e) {
-      res.status(500).send({ status: false, message: e.message, error: e });
-    }
-  })
-);
+router.post("/signup", catchAsync(signUpUser));
 router.post(
   "/check-email",
   catchAsync(async (req, res, next) => {
@@ -83,64 +61,35 @@ router.post(
     }
   })
 );
+
 // login
-router.post("/login", (req, res, next) => {
-  passport.authenticate("local", (err, user, info) => {
-    if (err) {
-      // err handling
-      return res.status(500).json({
-        status: false,
-        message: "Internal Server Error",
-        error: err.message,
-      });
-    }
-    if (!user) {
-      // authentication failed
-      return res
-        .status(200)
-        .json({ status: false, message: "Invalid Credentials" });
-    }
-    // authentication successful
-    req.logIn(user, async (err) => {
-      if (err) {
-        // handle err
-        return res.status(500).json({
-          status: false,
-          message: err.message,
-          error: err,
-        });
-      }
-      // User found
-      // sign jwt token
-      // const token = jwt.sign(user.id, process.env.SESSION_SECRET);
-      // // Store the token in the session
-      // req.session.token = token;
-      const token = req.headers.cookie;
+router.post("/login", loginUser);
 
-      return res.status(200).json({
-        status: true,
-        message: "Login successful",
-        data: { ...user.toObject(), token: token },
-      });
-    });
-  })(req, res, next);
-});
-
+const tokenBlacklist = new Set();
 // logout
-router.get("/logout", isLoggedIn, (req, res) => {
-  const user = req.user.personalInfo.email;
-  req.logout((err) => {
-    if (err) {
-      next(err);
-    } else {
-      res.status(200).send({
-        status: true,
-        message: `${user} user logged out`,
-      });
-    }
-  });
-});
+router.get(
+  "/logout",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    const user = req.user.personalInfo.email;
+    tokenBlacklist.add(req.headers.authorization);
+    res.status(200).send({
+      status: true,
+      message: `${user} user logged out`,
+    });
+  }
+);
 
+// Middleware to check if a token is blacklisted
+function isTokenBlacklisted(req, res, next) {
+  if (tokenBlacklist.has(req.headers.authorization)) {
+    return res.status(401).json({
+      status: false,
+      message: "Unauthorized - Token is blacklisted",
+    });
+  }
+  next();
+}
 router.post(
   "/send-email",
   catchAsync(async (req, res, next) => {
@@ -156,142 +105,20 @@ router.post(
   })
 );
 
-// Function to complete user profile
-const completeUserProfile = async (req, res, next) => {
-  try {
-    const {
-      userType = null,
-      pronouns = null,
-      interests = null,
-      skills = null,
-      language = null,
-      firstName = null,
-      lastName = null,
-      major = null,
-      school = null,
-      startDate = null,
-      endDate = null,
-      recentJobTitle = null,
-      recentCompany = null,
-      expertise = null,
-      mentorshipStyle = null,
-      noOfMentees = null,
-      employmentType = null,
-      availability = null,
-      employeeId = null,
-      jobTitle = null,
-      institution = null,
-      about = null,
-    } = req.body;
-
-    const loggedInUserEmail = req.session.passport.user;
-    const user = await User.findOneAndUpdate(
-      { "personalInfo.email": loggedInUserEmail },
-      {
-        $set: {
-          "personalInfo.userType": userType,
-          "personalInfo.pronouns": pronouns,
-          "personalInfo.interests": interests,
-          "personalInfo.skills": skills,
-          "personalInfo.language": language,
-          "personalInfo.firstName": firstName,
-          "personalInfo.lastName": lastName,
-          education: [
-            {
-              school: school,
-              major: major,
-              startDate: startDate,
-              endDate: endDate,
-            },
-          ],
-          mentor: {
-            jobTitle: recentJobTitle,
-            company: recentCompany,
-            expertise: expertise,
-            mentorshipStyle: mentorshipStyle,
-            noOfMentees: noOfMentees,
-            employmentType: employmentType,
-            availability: availability,
-          },
-          institution: {
-            creatorInfo: {
-              jobTitle: jobTitle,
-              employeeId: employeeId,
-            },
-            institution: institution,
-          },
-          about: about,
-        },
-      },
-      { new: true }
-    );
-
-    return res.status(200).json({
-      status: true,
-      message: "User profile completed successfully",
-      data: { ...user.toObject(), token: req.headers.cookie },
-    });
-  } catch (e) {
-    return res.status(500).json({
-      status: false,
-      message: e.message,
-      error: e,
-    });
-  }
-};
-router.post("/complete-profile", completeUserProfile);
+router.post(
+  "/complete-profile",
+  passport.authenticate("jwt", { session: false }),
+  isTokenBlacklisted,
+  completeUserProfile
+);
 
 router.post("/update-profile/:userId", isLoggedIn, completeUserProfile);
 
 // waitlist people with no invitation code
-router.post(
-  "/waitlist",
-  catchAsync(async (req, res, next) => {
-    try {
-      const { email } = req.body;
-      const emailExists = await Waitlist.findOne({ email });
-      if (emailExists) {
-        res
-          .status(200)
-          .json({ status: false, message: "User already in waitlist" });
-      } else {
-        const waitlist = new Waitlist({ email });
-        await waitlist.save();
-        res.status(200).json({
-          status: true,
-          message: "User added to waitlist",
-          data: waitlist,
-        });
-      }
-    } catch (e) {
-      res.status(500).json({ status: false, message: e.message, error: e });
-    }
-  })
-);
+router.post("/waitlist", catchAsync(waitlistUser));
 
 // check invitation code
-router.post(
-  "/check-invitation-code",
-  catchAsync(async (req, res, next) => {
-    try {
-      const { invitationCode } = req.body;
-      const codeExists = await InvitationCode.findOne({ invitationCode });
-      if (codeExists) {
-        res
-          .status(200)
-          .json({ status: true, message: "Valid invitation code", data: true });
-      } else {
-        res.status(200).json({
-          status: false,
-          message: "Invalid invitation code",
-          data: false,
-        });
-      }
-    } catch (e) {
-      res.status(500).json({ status: false, message: e.message, error: e });
-    }
-  })
-);
+router.post("/check-invitation-code", catchAsync(checkInvititationCode));
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
@@ -313,7 +140,7 @@ const s3 = new S3Client({
 });
 router.post(
   "/profile-image",
-  isLoggedIn,
+  passport.authenticate("jwt", { session: false }),
   upload.single("image"),
   catchAsync(async (req, res, next) => {
     const userId = req.user.id;
@@ -360,7 +187,7 @@ router.post(
 );
 router.get(
   "/profile-image",
-  isLoggedIn,
+  passport.authenticate("jwt", { session: false }),
   catchAsync(async (req, res, next) => {
     try {
       const userId = req.contact;
