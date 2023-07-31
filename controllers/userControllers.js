@@ -210,3 +210,65 @@ module.exports.checkInvititationCode = async (req, res, next) => {
     res.status(500).json({ status: false, message: e.message, error: e });
   }
 };
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+const randomImageName = (bytes = 32) =>
+  crypto.randomBytes(bytes).toString("hex");
+
+const s3BucketName = process.env.S3BUCKET_NAME;
+const s3BucketRegion = process.env.S3BUCKET_REGION;
+const s3AccessKey = process.env.S3_ACCESS_KEY;
+const s3SecretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
+
+const s3 = new S3Client({
+  credentials: {
+    accessKeyId: s3AccessKey,
+    secretAccessKey: s3SecretAccessKey,
+  },
+  region: s3BucketRegion,
+});
+
+module.exports.uploadImage = async (req, res, next) => {
+  const userId = req.user.id;
+  console.log(req.body);
+  console.log(req.file);
+  const imageName = randomImageName();
+  const params = {
+    Bucket: s3BucketName,
+    Key: imageName,
+    Body: req.file.buffer,
+    ContentType: req.file.mimetype,
+  };
+  const command = new PutObjectCommand(params);
+  await s3.send(command);
+
+  const user = await User.findOneAndUpdate(
+    { _id: userId },
+    {
+      $set: {
+        "personalInfo.profileImage": {
+          fileName: imageName,
+        },
+      },
+    },
+    { new: true }
+  );
+  const generatedUrl = memoryCache.get("generatedUrl");
+  console.log(generatedUrl);
+  if (generatedUrl) {
+    res.status(200).json({
+      status: true,
+      message:
+        "Successfully uploaded image and link to access the image is provided",
+      data: { user, generatedUrl },
+    });
+  } else {
+    res.status(200).json({
+      status: true,
+      message: "Successfully uploaded image",
+      data: { user },
+    });
+  }
+};
