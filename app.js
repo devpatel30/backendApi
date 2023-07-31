@@ -13,8 +13,6 @@ const userRoutes = require("./routes/users");
 const authRoutes = require("./routes/auth");
 const resourceRoutes = require("./routes/resource");
 
-const session = require("express-session");
-
 app.listen(process.env.PORT, () => {
   console.log(`Listening at port ${process.env.PORT}`);
 });
@@ -31,23 +29,24 @@ db.once("open", () => {
   console.log("Database connected");
 });
 
-const sessionConfig = {
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: true,
-  cookie: {
-    httpOnly: true,
-    expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
-    maxAge: 1000 * 60 * 60 * 24 * 7,
-  },
-};
+// const sessionConfig = {
+//   secret: process.env.SESSION_SECRET,
+//   resave: false,
+//   saveUninitialized: true,
+//   cookie: {
+//     httpOnly: true,
+//     expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
+//     maxAge: 1000 * 60 * 60 * 24 * 7,
+//   },
+// };
 
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(session(sessionConfig));
+// app.use(session(sessionConfig));
 
 // using passport for authentication
 app.use(passport.initialize());
-app.use(passport.session());
+// app.use(passport.session());
 passport.use(new LocalStrategy(User.authenticate()));
 
 // adding user and removing user from the session using passport local stratergy
@@ -58,6 +57,18 @@ passport.deserializeUser(User.deserializeUser());
 app.get("/", (req, res) => {
   res.send("home");
 });
+require("./config/appAuth");
+app.get(
+  "/protected",
+  passport.authenticate("jwt", { session: false }),
+  (req, res) => {
+    return res.status(200).json({
+      status: true,
+      message: "Authenticated user",
+      data: { id: req.user._id, username: req.user.personalInfo.email },
+    });
+  }
+);
 
 app.use("/user", userRoutes);
 app.use("/auth", authRoutes);

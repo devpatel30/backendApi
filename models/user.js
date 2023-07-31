@@ -1,8 +1,20 @@
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
+const memoryCache = require("memory-cache");
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 const passportLocalMongoose = require("passport-local-mongoose");
 const { generateInvitationCode } = require("../middleware/utils");
 const InvitationCode = require("./invitationCode");
+
+const {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+} = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const crypto = require("node:crypto");
 
 const userSchema = new Schema({
   personalInfo: {
@@ -212,4 +224,41 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-module.exports = mongoose.model("User", userSchema);
+const s3BucketName = process.env.S3BUCKET_NAME;
+const s3BucketRegion = process.env.S3BUCKET_REGION;
+const s3AccessKey = process.env.S3_ACCESS_KEY;
+const s3SecretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
+const s3 = new S3Client({
+  credentials: {
+    accessKeyId: s3AccessKey,
+    secretAccessKey: s3SecretAccessKey,
+  },
+  region: s3BucketRegion,
+});
+
+userSchema.pre("save", async function (next) {
+  try {
+    if (this.isModified("personalInfo.profileImage.fileName")) {
+      const fileName = this.personalInfo.profileImage.fileName;
+      console.log(fileName);
+      if (fileName == undefined) {
+        next();
+      }
+      const getObjectParams = {
+        Bucket: s3BucketName,
+        Key: this.personalInfo.profileImage.fileName,
+      };
+      const command = new GetObjectCommand(getObjectParams);
+      const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+      memoryCache.put("generatedUrl", url, 3600000);
+    } else {
+      next();
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
+const User = mongoose.model("User", userSchema);
+
+module.exports = User;

@@ -1,17 +1,19 @@
 const Otp = require("../models/otp");
 const crypto = require("node:crypto");
 const { v4: uuidv4 } = require("uuid");
+// require("../config/appAuth");
 
 module.exports.isLoggedIn = (req, res, next) => {
-  if (!req.isAuthenticated()) {
-    return res.status(400).send({
-      status: false,
-      message: "user must be signed in redirect to login",
-    });
-  } else {
-    req.contact = req.session.passport.user;
-  }
-  next();
+  // passport.authenticate("jwt", { session: false }, (err, user) => {
+  //   if (err || !user) {
+  //     return res.status(401).json({
+  //       status: false,
+  //       message: "Unauthorized",
+  //     });
+  //   }
+  //   req.user = user; // Attach the authenticated user to the request object
+  //   return next();
+  // })(req, res, next);
 };
 
 module.exports.createEmailMessage = (toEmail, subject, text, html) => {
