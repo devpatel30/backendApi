@@ -1,15 +1,16 @@
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
 const passport = require("passport");
 const JwtStrategy = require("passport-jwt").Strategy;
 const ExtractJwt = require("passport-jwt").ExtractJwt;
 
 const { User } = require("../models");
 
-const secretKey = "your-secret-key"; // Replace with your secret key for signing and verifying JWTs
-
 // Options for the JWT Strategy
 const jwtOptions = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), // Extract JWT from Authorization header (Bearer scheme)
-  secretOrKey: secretKey,
+  secretOrKey: process.env.SESSION_SECRET,
 };
 
 // JWT Strategy for Passport
