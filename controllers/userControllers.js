@@ -105,20 +105,43 @@ module.exports.emailExists = async (req, res, next) => {
     res.status(500).json({ status: false, message: e.message, error: e });
   }
 };
+const areAllValuesNull = (obj) => {
+  for (const key in obj) {
+    if (obj[key] !== null) {
+      return false;
+    } else if (typeof obj[key] === "object" && !Array.isArray(obj[key])) {
+      if (!areAllValuesNull(obj[key])) {
+        return false;
+      }
+    } else if (Array.isArray(obj[key])) {
+      for (const item of obj[key]) {
+        if (typeof item === "object" && !Array.isArray(item)) {
+          if (!areAllValuesNull(item)) {
+            return false;
+          }
+        } else if (item !== null) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+};
+
 const removeNullProperties = (obj) => {
   for (const key in obj) {
     if (obj[key] === null) {
       delete obj[key];
     } else if (typeof obj[key] === "object" && !Array.isArray(obj[key])) {
       removeNullProperties(obj[key]);
-      if (Object.keys(obj[key]).length === 0) {
+      if (areAllValuesNull(obj[key])) {
         delete obj[key];
       }
     } else if (Array.isArray(obj[key])) {
       obj[key] = obj[key].filter((item) => {
         if (typeof item === "object" && !Array.isArray(item)) {
           removeNullProperties(item);
-          return Object.keys(item).length > 0;
+          return !areAllValuesNull(item);
         }
         return item !== null;
       });
