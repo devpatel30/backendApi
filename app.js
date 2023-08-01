@@ -29,24 +29,11 @@ db.once("open", () => {
   console.log("Database connected");
 });
 
-// const sessionConfig = {
-//   secret: process.env.SESSION_SECRET,
-//   resave: false,
-//   saveUninitialized: true,
-//   cookie: {
-//     httpOnly: true,
-//     expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
-//     maxAge: 1000 * 60 * 60 * 24 * 7,
-//   },
-// };
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// app.use(session(sessionConfig));
 
 // using passport for authentication
 app.use(passport.initialize());
-// app.use(passport.session());
 passport.use(new LocalStrategy(User.authenticate()));
 
 // adding user and removing user from the session using passport local stratergy
@@ -74,7 +61,6 @@ app.use("/user", userRoutes);
 app.use("/auth", authRoutes);
 app.use("/resource", resourceRoutes);
 app.all("*", (req, res, next) => {
-  //   next(new ExpressError("Page Not Found", 404));
   res.status(404).json({ status: false, message: "Page not found" });
 });
 //err handler
