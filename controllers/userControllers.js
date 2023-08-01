@@ -153,7 +153,7 @@ module.exports.completeUserProfile = async (req, res, next) => {
       },
       { new: true }
     );
-
+    user.auth.isProfileCompleted = true;
     return res.status(200).json({
       status: true,
       message: "User profile completed successfully",
