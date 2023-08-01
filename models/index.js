@@ -7,6 +7,14 @@ const Interest = require("./interest");
 const InvitationCode = require("./invitationCode");
 const JobTitle = require("./jobTitle");
 const Language = require("./language");
+const Major = require("./major");
+const Media = require("./media");
+const MentorshipStyle = require("./mentorshipStyle");
+const Otp = require("./otp");
+const Portfolio = require("./portfolio");
+const School = require("./school");
+const Skill = require("./skill");
+const Waitlist = require("./waitlist");
 
 module.exports = {
   User,
@@ -18,4 +26,12 @@ module.exports = {
   InvitationCode,
   JobTitle,
   Language,
+  Major,
+  Media,
+  MentorshipStyle,
+  Otp,
+  Portfolio,
+  School,
+  Skill,
+  Waitlist,
 };

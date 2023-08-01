@@ -1,20 +1,11 @@
 if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
-const memoryCache = require("memory-cache");
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 const passportLocalMongoose = require("passport-local-mongoose");
 const { generateInvitationCode } = require("../middleware/utils");
 const InvitationCode = require("./invitationCode");
-
-const {
-  S3Client,
-  PutObjectCommand,
-  GetObjectCommand,
-} = require("@aws-sdk/client-s3");
-const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const crypto = require("node:crypto");
 
 const userSchema = new Schema({
   personalInfo: {

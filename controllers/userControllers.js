@@ -1,13 +1,11 @@
 if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
-const express = require("express");
-const router = express.Router();
+const mongoose = require("mongoose");
 
 const passport = require("passport");
-const sgMail = require("@sendgrid/mail");
 const jwt = require("jsonwebtoken");
-const multer = require("multer");
+
 const {
   S3Client,
   PutObjectCommand,
@@ -15,9 +13,8 @@ const {
 } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const crypto = require("node:crypto");
-const memoryCache = require("memory-cache");
 
-const { User } = require("../models");
+const { User, Expertise, Availability } = require("../models");
 const Waitlist = require("../models/waitlist");
 const InvitationCode = require("../models/invitationCode");
 
@@ -84,6 +81,53 @@ module.exports.loginUser = (req, res, next) => {
   })(req, res, next);
 };
 
+// check if email already in database
+module.exports.emailExists = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (email === "") {
+      res.status(200).json({ status: false, message: "No email entered" });
+      return;
+    }
+    const emailExists = await User.findOne({ "personalInfo.email": email });
+    if (emailExists) {
+      res
+        .status(200)
+        .json({ status: false, message: "Email already exists", data: true });
+    } else {
+      res.status(200).json({
+        status: true,
+        message: "User can register with this email",
+        data: false,
+      });
+    }
+  } catch (e) {
+    res.status(500).json({ status: false, message: e.message, error: e });
+  }
+};
+const removeNullProperties = (obj) => {
+  for (const key in obj) {
+    if (obj[key] === null) {
+      delete obj[key];
+    } else if (typeof obj[key] === "object" && !Array.isArray(obj[key])) {
+      removeNullProperties(obj[key]);
+      if (Object.keys(obj[key]).length === 0) {
+        delete obj[key];
+      }
+    } else if (Array.isArray(obj[key])) {
+      obj[key] = obj[key].filter((item) => {
+        if (typeof item === "object" && !Array.isArray(item)) {
+          removeNullProperties(item);
+          return Object.keys(item).length > 0;
+        }
+        return item !== null;
+      });
+      if (obj[key].length === 0) {
+        delete obj[key];
+      }
+    }
+  }
+};
 // Function to complete user profile
 module.exports.completeUserProfile = async (req, res, next) => {
   try {
@@ -112,48 +156,88 @@ module.exports.completeUserProfile = async (req, res, next) => {
       about = null,
     } = req.body;
 
+    // Saving the availability objects and get their ObjectId values
+
+    const availabilityData = availability;
+    let availabilityObjectIdArray = [];
+    //  Check if availabilityData is an array and has elements before iterating
+    if (Array.isArray(availabilityData) && availabilityData.length > 0) {
+      const availabilityIds = [];
+      for (const availabilityObj of availabilityData) {
+        const availability = new Availability(availabilityObj);
+        await availability.save();
+        availabilityIds.push(availability._id);
+      }
+
+      // array that has the ObjectId values of availability
+      availabilityObjectIdArray = availabilityIds.map(
+        (id) => new mongoose.Types.ObjectId(id)
+      );
+    }
+
+    // Saving the availability objects and get their ObjectId values
+    const expertiseData = expertise;
+    let expertiseObjectIdArray = [];
+    // Check if expertiseData is an array and has elements before iterating
+    if (Array.isArray(expertiseData) && expertiseData.length > 0) {
+      const expertiseIds = [];
+      for (const expertiseObj of expertiseData) {
+        const expertise = new Expertise(expertiseObj);
+        await expertise.save();
+        expertiseIds.push(expertise._id);
+      }
+
+      // array that has the ObjectId values of expertise
+      expertiseObjectIdArray = expertiseIds.map(
+        (id) => new mongoose.Types.ObjectId(id)
+      );
+    }
+
     const loggedInUserEmail = req.user.personalInfo.email;
+    const updateObj = {
+      "personalInfo.userType": userType,
+      "personalInfo.pronouns": pronouns,
+      "personalInfo.interests": interests,
+      "personalInfo.skills": skills,
+      "personalInfo.language": language,
+      "personalInfo.firstName": firstName,
+      "personalInfo.lastName": lastName,
+      education: [
+        {
+          school: school,
+          major: major,
+          startDate: startDate,
+          endDate: endDate,
+        },
+      ],
+      mentor: {
+        jobTitle: recentJobTitle,
+        company: recentCompany,
+        expertise: expertiseObjectIdArray,
+        mentorshipStyle: mentorshipStyle,
+        noOfMentees: noOfMentees,
+        employmentType: employmentType,
+        availability: availabilityObjectIdArray,
+      },
+      institution: {
+        creatorInfo: {
+          jobTitle: jobTitle,
+          employeeId: employeeId,
+        },
+        institution: institution,
+      },
+      about: about,
+    };
+
+    removeNullProperties(updateObj);
+
     const user = await User.findOneAndUpdate(
       { "personalInfo.email": loggedInUserEmail },
-      {
-        $set: {
-          "personalInfo.userType": userType,
-          "personalInfo.pronouns": pronouns,
-          "personalInfo.interests": interests,
-          "personalInfo.skills": skills,
-          "personalInfo.language": language,
-          "personalInfo.firstName": firstName,
-          "personalInfo.lastName": lastName,
-          education: [
-            {
-              school: school,
-              major: major,
-              startDate: startDate,
-              endDate: endDate,
-            },
-          ],
-          mentor: {
-            jobTitle: recentJobTitle,
-            company: recentCompany,
-            expertise: expertise,
-            mentorshipStyle: mentorshipStyle,
-            noOfMentees: noOfMentees,
-            employmentType: employmentType,
-            availability: availability,
-          },
-          institution: {
-            creatorInfo: {
-              jobTitle: jobTitle,
-              employeeId: employeeId,
-            },
-            institution: institution,
-          },
-          about: about,
-        },
-      },
+      { $set: updateObj },
       { new: true }
     );
     user.auth.isProfileCompleted = true;
+    await user.save();
     return res.status(200).json({
       status: true,
       message: "User profile completed successfully",
@@ -210,9 +294,6 @@ module.exports.checkInvititationCode = async (req, res, next) => {
     res.status(500).json({ status: false, message: e.message, error: e });
   }
 };
-
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
 
 const randomImageName = (bytes = 32) =>
   crypto.randomBytes(bytes).toString("hex");
@@ -273,16 +354,33 @@ module.exports.getImageLink = async (req, res, next) => {
   try {
     const username = req.user.personalInfo.email;
     const user = await User.findOne({ "personalInfo.email": username });
+
+    if (
+      !user.personalInfo.profileImage ||
+      !user.personalInfo.profileImage.fileName
+    ) {
+      // Handle the case when the user doesn't have a profile image
+      return res.status(404).json({
+        status: false,
+        message: "User's profile image not found.",
+      });
+    }
+
+    // Get the filename from the user's profileImage object
+    const filename = user.personalInfo.profileImage.fileName;
+
     const getObjectParams = {
       Bucket: s3BucketName,
-      Key: user.personalInfo.profileImage.fileName,
+      Key: filename,
     };
     const command = new GetObjectCommand(getObjectParams);
-    const url = await getSignedUrl(s3, command, { expiresIn: 3600 });
+    const url = await getSignedUrl(s3, command, { expiresIn: 604800 });
+    user.personalInfo.profileImageLink = url;
+
     res.status(200).json({
       status: true,
-      message: "Access link to image made valid for 3600s",
-      data: url,
+      message: "Access link to image made valid for 1 week.",
+      data: { ...user.toObject(), token: req.headers.authorization },
     });
   } catch (e) {
     res.status(500).json({ status: false, message: e.message, error: e });
