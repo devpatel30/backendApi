@@ -1,11 +1,9 @@
-if (process.env.NODE_ENV !== "production") {
-  require("dotenv").config();
-}
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 const passportLocalMongoose = require("passport-local-mongoose");
 const { generateInvitationCode } = require("../middleware/utils");
 const InvitationCode = require("./invitationCode");
+const Token = require("./token");
 
 const userSchema = new Schema({
   personalInfo: {
@@ -177,9 +175,6 @@ const userSchema = new Schema({
     ref: "InvitationCode",
   },
 });
-userSchema.plugin(passportLocalMongoose, {
-  usernameField: "personalInfo.email",
-});
 
 userSchema.pre(/^find/, function (next) {
   this.populate([
@@ -220,6 +215,10 @@ userSchema.pre("save", async function (next) {
   } catch (err) {
     next(err); // Pass the error to the next middleware
   }
+});
+
+userSchema.plugin(passportLocalMongoose, {
+  usernameField: "personalInfo.email",
 });
 
 const User = mongoose.model("User", userSchema);

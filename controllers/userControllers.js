@@ -14,7 +14,10 @@ const {
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const crypto = require("node:crypto");
 
-const { User, Expertise, Availability } = require("../models");
+const { Expertise, Availability } = require("../models");
+const { User, Token } = require("../models");
+
+// const User = require("../models/user");
 const Waitlist = require("../models/waitlist");
 const InvitationCode = require("../models/invitationCode");
 
@@ -26,9 +29,30 @@ function generateJWT(user) {
     id: user._id,
     username: user.personalInfo.email,
   };
+  const token = jwt.sign(payload, process.env.SESSION_SECRET, {
+    expiresIn: "1w",
+  });
+  // Save the token to the database
+  saveTokenToDb(token, user._id);
 
-  return jwt.sign(payload, process.env.SESSION_SECRET, { expiresIn: "1w" }); // Token expires in 1 hour
+  return token;
 }
+// Function to save token to the database
+const saveTokenToDb = async (accessToken, userId) => {
+  try {
+    const token = new Token({
+      accessToken: accessToken,
+      userId: userId,
+    });
+
+    await token.save();
+  } catch (error) {
+    // Handle any errors that might occur during the save operation
+    console.error("Error saving token to database:", error.message);
+    throw error;
+  }
+};
+
 module.exports.signUpUser = async (req, res, next) => {
   try {
     const { userType, email, password } = req.body;
@@ -79,6 +103,16 @@ module.exports.loginUser = (req, res, next) => {
       data: { ...user.toObject(), token: "Bearer " + token },
     });
   })(req, res, next);
+};
+
+// logout
+module.exports.logoutUser = async (req, res, next) => {
+  const user = await User.findOne({ _id: req.userId });
+  findAndDeleteTokenByUserId(req.userId);
+  res.status(200).send({
+    status: true,
+    message: `${user.personalInfo.email} user logged out`,
+  });
 };
 
 // check if email already in database

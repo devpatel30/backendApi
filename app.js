@@ -7,11 +7,12 @@ const mongoose = require("mongoose");
 
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
-const User = require("./models/user");
+const { User } = require("./models");
 
 const userRoutes = require("./routes/users");
 const authRoutes = require("./routes/auth");
 const resourceRoutes = require("./routes/resource");
+const profileRoutes = require("./routes/profile");
 
 app.listen(process.env.PORT, () => {
   console.log(`Listening at port ${process.env.PORT}`);
@@ -58,6 +59,7 @@ app.get(
 );
 
 app.use("/user", userRoutes);
+app.use("/profile", profileRoutes);
 app.use("/auth", authRoutes);
 app.use("/resource", resourceRoutes);
 app.all("*", (req, res, next) => {

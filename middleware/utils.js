@@ -1,19 +1,49 @@
-const Otp = require("../models/otp");
+if (process.env.NODE_ENV !== "production") {
+  require("dotenv").config();
+}
+// const Otp = require("../models/otp");
 const crypto = require("node:crypto");
 const { v4: uuidv4 } = require("uuid");
-// require("../config/appAuth");
+const jwt = require("jsonwebtoken");
+const Token = require("../models/token");
 
-module.exports.isLoggedIn = (req, res, next) => {
-  // passport.authenticate("jwt", { session: false }, (err, user) => {
-  //   if (err || !user) {
-  //     return res.status(401).json({
-  //       status: false,
-  //       message: "Unauthorized",
-  //     });
-  //   }
-  //   req.user = user; // Attach the authenticated user to the request object
-  //   return next();
-  // })(req, res, next);
+// Middleware to check if user is logged in
+module.exports.isLoggedIn = async (req, res, next) => {
+  try {
+    // get accesstoken from headers of req
+    const accessToken = req.headers.authorization.split(" ")[1];
+    if (!accessToken) {
+      return res.status(401).json({
+        status: false,
+        message: "Access token not provided.",
+      });
+    }
+
+    // Verify the access token
+    const decodedToken = jwt.verify(accessToken, process.env.SESSION_SECRET);
+    // Check if the token exists in the database
+    const tokenExists = await Token.exists({ accessToken: accessToken });
+
+    if (!tokenExists) {
+      return res.status(401).json({
+        status: false,
+        message: "Invalid access token or user is not logged in",
+      });
+    }
+
+    // Set the user ID from the decoded token on the request object
+    req.userId = decodedToken.id;
+    console.log(req.userId);
+
+    // Continue to the next middleware or route handler
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      status: false,
+      message: "Authentication failed.",
+      error: error.message,
+    });
+  }
 };
 
 module.exports.createEmailMessage = (toEmail, subject, text, html) => {
@@ -57,4 +87,27 @@ module.exports.generateOtp = async (req, res, next) => {
 module.exports.generateInvitationCode = () => {
   const invitationCode = uuidv4().replace(/-/g, "").substring(0, 8);
   return invitationCode;
+};
+
+// Function to find the token by userId and delete it
+module.exports.findAndDeleteTokenByUserId = async (userId) => {
+  try {
+    // Find the token by userId and delete it
+    const deletedToken = await Token.findOneAndDelete({ userId });
+
+    if (!deletedToken) {
+      // If no token was found for the given userId
+      return res.status(200).json({
+        status: false,
+        message: "Token not found or already deleted by token expiration",
+      });
+    }
+
+    console.log("Token deleted successfully:", deletedToken);
+  } catch (e) {
+    console.error("Error while deleting the token:", e);
+    return res
+      .status(500)
+      .json({ status: false, message: e.message, error: e });
+  }
 };
