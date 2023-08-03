@@ -1,0 +1,252 @@
+diff --git a/.gitignore b/.gitignore
+index b46aae8..2414f6f 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,2 +1,4 @@
+ node_modules
+ api_names.dart
++edit-profiledocx
++updated-docs
+\ No newline at end of file
+diff --git a/app.js b/app.js
+index b9ab5d3..5abfe62 100644
+--- a/app.js
++++ b/app.js
+@@ -12,6 +12,7 @@ const User = require("./models/user");
+ const userRoutes = require("./routes/users");
+ const authRoutes = require("./routes/auth");
+ const resourceRoutes = require("./routes/resource");
++const profileRoutes = require("./routes/profile");
+ 
+ app.listen(process.env.PORT, () => {
+   console.log(`Listening at port ${process.env.PORT}`);
+@@ -58,6 +59,7 @@ app.get(
+ );
+ 
+ app.use("/user", userRoutes);
++app.use("/profile", profileRoutes);
+ app.use("/auth", authRoutes);
+ app.use("/resource", resourceRoutes);
+ app.all("*", (req, res, next) => {
+diff --git a/controllers/userControllers.js b/controllers/userControllers.js
+index c702bed..358f0cc 100644
+--- a/controllers/userControllers.js
++++ b/controllers/userControllers.js
+@@ -14,7 +14,10 @@ const {
+ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+ const crypto = require("node:crypto");
+ 
+-const { User, Expertise, Availability } = require("../models");
++const { Expertise, Availability } = require("../models");
++const { User, Token } = require("../models");
++
++// const User = require("../models/user");
+ const Waitlist = require("../models/waitlist");
+ const InvitationCode = require("../models/invitationCode");
+ 
+@@ -26,9 +29,30 @@ function generateJWT(user) {
+     id: user._id,
+     username: user.personalInfo.email,
+   };
++  const token = jwt.sign(payload, process.env.SESSION_SECRET, {
++    expiresIn: "1w",
++  });
++  // Save the token to the database
++  saveTokenToDb(token, user._id);
+ 
+-  return jwt.sign(payload, process.env.SESSION_SECRET, { expiresIn: "1w" }); // Token expires in 1 hour
++  return token;
+ }
++// Function to save token to the database
++const saveTokenToDb = async (accessToken, userId) => {
++  try {
++    const token = new Token({
++      accessToken: accessToken,
++      userId: userId,
++    });
++
++    await token.save();
++  } catch (error) {
++    // Handle any errors that might occur during the save operation
++    console.error("Error saving token to database:", error.message);
++    throw error;
++  }
++};
++
+ module.exports.signUpUser = async (req, res, next) => {
+   try {
+     const { userType, email, password } = req.body;
+@@ -48,6 +72,7 @@ module.exports.signUpUser = async (req, res, next) => {
+       data: { ...regUser.toObject(), token: "Bearer " + token },
+     });
+   } catch (e) {
++    console.error("Error during signup:", e);
+     res.status(500).send({ status: false, message: e.message, error: e });
+   }
+ };
+diff --git a/middleware/utils.js b/middleware/utils.js
+index fe05cc3..b41f6f8 100644
+--- a/middleware/utils.js
++++ b/middleware/utils.js
+@@ -1,19 +1,51 @@
++if (process.env.NODE_ENV !== "production") {
++  require("dotenv").config();
++}
+ const Otp = require("../models/otp");
+ const crypto = require("node:crypto");
+ const { v4: uuidv4 } = require("uuid");
++const jwt = require("jsonwebtoken");
++const mongoose = require("mongoose");
++const { Token } = require("../models");
++
+ // require("../config/appAuth");
+ 
+-module.exports.isLoggedIn = (req, res, next) => {
+-  // passport.authenticate("jwt", { session: false }, (err, user) => {
+-  //   if (err || !user) {
+-  //     return res.status(401).json({
+-  //       status: false,
+-  //       message: "Unauthorized",
+-  //     });
+-  //   }
+-  //   req.user = user; // Attach the authenticated user to the request object
+-  //   return next();
+-  // })(req, res, next);
++// Middleware to check if user is logged in
++module.exports.isLoggedIn = async (req, res, next) => {
++  try {
++    // get accesstoken from headers of req
++    const accessToken = req.headers.authorization;
++
++    if (!accessToken) {
++      return res.status(401).json({
++        status: false,
++        message: "Access token not provided.",
++      });
++    }
++    // Verify the access token
++    const decodedToken = jwt.verify(accessToken, process.env.SESSION_SECRET);
++    // Check if the token exists in the database
++    const tokenExists = await Token.exists({ accessToken: accessToken });
++
++    if (!tokenExists) {
++      return res.status(401).json({
++        status: false,
++        message: "Invalid access token.",
++      });
++    }
++
++    // Set the user ID from the decoded token on the request object
++    req.userId = decodedToken.id;
++
++    // Continue to the next middleware or route handler
++    next();
++  } catch (error) {
++    return res.status(401).json({
++      status: false,
++      message: "Authentication failed.",
++      error: error.message,
++    });
++  }
+ };
+ 
+ module.exports.createEmailMessage = (toEmail, subject, text, html) => {
+diff --git a/models/index.js b/models/index.js
+index ce33376..5cb75b7 100644
+--- a/models/index.js
++++ b/models/index.js
+@@ -1,4 +1,3 @@
+-const User = require("./user");
+ const Availability = require("./availability");
+ const Company = require("./company");
+ const EmploymentType = require("./employmentType");
+@@ -14,10 +13,11 @@ const Otp = require("./otp");
+ const Portfolio = require("./portfolio");
+ const School = require("./school");
+ const Skill = require("./skill");
++const User = require("./user");
++const Token = require("./token");
+ const Waitlist = require("./waitlist");
+ 
+ module.exports = {
+-  User,
+   Availability,
+   Company,
+   EmploymentType,
+@@ -33,5 +33,7 @@ module.exports = {
+   Portfolio,
+   School,
+   Skill,
++  User,
++  Token,
+   Waitlist,
+ };
+diff --git a/models/user.js b/models/user.js
+index 4ca06d0..6e98a44 100644
+--- a/models/user.js
++++ b/models/user.js
+@@ -1,6 +1,3 @@
+-if (process.env.NODE_ENV !== "production") {
+-  require("dotenv").config();
+-}
+ const mongoose = require("mongoose");
+ const { Schema } = mongoose;
+ const passportLocalMongoose = require("passport-local-mongoose");
+@@ -177,9 +174,6 @@ const userSchema = new Schema({
+     ref: "InvitationCode",
+   },
+ });
+-userSchema.plugin(passportLocalMongoose, {
+-  usernameField: "personalInfo.email",
+-});
+ 
+ userSchema.pre(/^find/, function (next) {
+   this.populate([
+@@ -222,6 +216,10 @@ userSchema.pre("save", async function (next) {
+   }
+ });
+ 
++userSchema.plugin(passportLocalMongoose, {
++  usernameField: "personalInfo.email",
++});
++
+ const User = mongoose.model("User", userSchema);
+ 
+ module.exports = User;
+diff --git a/routes/resource.js b/routes/resource.js
+index 952d46f..5d76faa 100644
+--- a/routes/resource.js
++++ b/routes/resource.js
+@@ -3,18 +3,20 @@ const router = express.Router();
+ 
+ const catchAsync = require("../utils/catchAsync");
+ 
+-const Availability = require("../models/availability");
+-const Company = require("../models/company");
+-const EmploymentType = require("../models/employmentType");
+-const Expertise = require("../models/expertise");
+-const Interest = require("../models/interest");
+-const InvitationCode = require("../models/invitationCode");
+-const JobTitle = require("../models/jobTitle");
+-const Language = require("../models/language");
+-const Major = require("../models/major");
+-const MentorshipStyle = require("../models/mentorshipStyle");
+-const School = require("../models/school");
+-const Skill = require("../models/skill");
++const {
++  Availability,
++  Company,
++  EmploymentType,
++  Expertise,
++  Interest,
++  InvitationCode,
++  JobTitle,
++  Language,
++  Major,
++  MentorshipStyle,
++  School,
++  Skill,
++} = require("../models");
+ 
+ const models = {
+   Availability,

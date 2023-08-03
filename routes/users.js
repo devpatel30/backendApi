@@ -9,7 +9,11 @@ const sgMail = require("@sendgrid/mail");
 const multer = require("multer");
 
 const catchAsync = require("../utils/catchAsync");
-const { createEmailMessage } = require("../middleware/utils");
+const {
+  createEmailMessage,
+  isLoggedIn,
+  findAndDeleteTokenByUserId,
+} = require("../middleware/utils");
 
 const {
   signUpUser,
@@ -20,7 +24,9 @@ const {
   uploadImage,
   getImageLink,
   emailExists,
+  logoutUser,
 } = require("../controllers/userControllers");
+
 require("../config/appAuth");
 
 // signup
@@ -32,18 +38,7 @@ router.post("/login", loginUser);
 
 const tokenBlacklist = new Set();
 // logout
-router.get(
-  "/logout",
-  passport.authenticate("jwt", { session: false }),
-  (req, res) => {
-    const user = req.user.personalInfo.email;
-    tokenBlacklist.add(req.headers.authorization);
-    res.status(200).send({
-      status: true,
-      message: `${user} user logged out`,
-    });
-  }
-);
+router.get("/logout", isLoggedIn, catchAsync(logoutUser));
 
 // Middleware to check if a token is blacklisted
 function isTokenBlacklisted(req, res, next) {

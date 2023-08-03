@@ -3,18 +3,20 @@ const router = express.Router();
 
 const catchAsync = require("../utils/catchAsync");
 
-const Availability = require("../models/availability");
-const Company = require("../models/company");
-const EmploymentType = require("../models/employmentType");
-const Expertise = require("../models/expertise");
-const Interest = require("../models/interest");
-const InvitationCode = require("../models/invitationCode");
-const JobTitle = require("../models/jobTitle");
-const Language = require("../models/language");
-const Major = require("../models/major");
-const MentorshipStyle = require("../models/mentorshipStyle");
-const School = require("../models/school");
-const Skill = require("../models/skill");
+const {
+  Availability,
+  Company,
+  EmploymentType,
+  Expertise,
+  Interest,
+  InvitationCode,
+  JobTitle,
+  Language,
+  Major,
+  MentorshipStyle,
+  School,
+  Skill,
+} = require("../models");
 
 const models = {
   Availability,

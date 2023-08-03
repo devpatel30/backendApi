@@ -1,4 +1,3 @@
-const User = require("./user");
 const Availability = require("./availability");
 const Company = require("./company");
 const EmploymentType = require("./employmentType");
@@ -14,10 +13,11 @@ const Otp = require("./otp");
 const Portfolio = require("./portfolio");
 const School = require("./school");
 const Skill = require("./skill");
+const User = require("./user");
+const Token = require("./token");
 const Waitlist = require("./waitlist");
 
 module.exports = {
-  User,
   Availability,
   Company,
   EmploymentType,
@@ -33,5 +33,7 @@ module.exports = {
   Portfolio,
   School,
   Skill,
+  User,
+  Token,
   Waitlist,
 };

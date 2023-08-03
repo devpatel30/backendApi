@@ -23,8 +23,9 @@ module.exports.saveAndSendOtp = async (req, res, next) => {
     //  if it is not empty
     if (Object.keys(req.body).length === 0) {
       // takes value from session of user logged in
-      if (req.session.passport) {
-        contact = req.session.passport.user;
+      if (req.userId) {
+        const user = await User.findOne({ _id: req.userId });
+        contact = user.personalInfo.email;
         contactType = "email";
       }
     } else {
@@ -83,12 +84,16 @@ module.exports.verifyOTP = async (req, res) => {
       "auth.generatedOtp": true,
     });
     if (!user) {
-      return res
-        .status(404)
-        .json({ status: false, message: "User did not requested the otp" });
+      return res.status(200).json({
+        status: false,
+        message: "User did not requested the otp",
+      });
     }
     if (!otp) {
-      return res.send("User did not generate OTP");
+      return res.status(200).json({
+        status: false,
+        message: "User did not generate OTP or the otp expired",
+      });
     }
     otp.otp = crypto
       .createHmac("sha256", otp.secret)
