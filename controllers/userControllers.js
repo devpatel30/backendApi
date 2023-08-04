@@ -21,7 +21,34 @@ const { User, Token } = require("../models");
 const Waitlist = require("../models/waitlist");
 const InvitationCode = require("../models/invitationCode");
 
+const { findAndDeleteTokenByUserId } = require("../middleware/utils");
+
 require("../config/appAuth");
+
+// check if email already in database
+module.exports.emailExists = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (email === "") {
+      res.status(200).json({ status: false, message: "No email entered" });
+      return;
+    }
+    const emailExists = await User.findOne({ "personalInfo.email": email });
+    if (emailExists) {
+      res
+        .status(200)
+        .json({ status: false, message: "Email already exists", data: true });
+    } else {
+      res.status(200).json({
+        status: true,
+        message: "User can register with this email",
+        data: false,
+      });
+    }
+  } catch (e) {
+    res.status(500).json({ status: false, message: e.message, error: e });
+  }
+};
 
 // Function to generate JWT given a user object
 function generateJWT(user) {
@@ -53,29 +80,38 @@ const saveTokenToDb = async (accessToken, userId) => {
   }
 };
 
+// signup
 module.exports.signUpUser = async (req, res, next) => {
   try {
     const { userType, email, password } = req.body;
     const username = email;
-    const user = new User({
-      personalInfo: { userType, email },
-      username,
-    });
-    const regUser = await User.register(user, password);
-    // Login the user
-    const token = generateJWT(user);
+    const emailExists = await User.findOne({ "personalInfo.email": email });
+    if (emailExists) {
+      res
+        .status(200)
+        .json({ status: false, message: "Email already exists", data: true });
+    } else {
+      const user = new User({
+        personalInfo: { userType, email },
+        username,
+      });
+      const regUser = await User.register(user, password);
+      // Login the user
+      const token = generateJWT(user);
 
-    // Return the token in the response
-    return res.status(200).json({
-      status: true,
-      message: "User successfully created and logged in",
-      data: { ...regUser.toObject(), token: "Bearer " + token },
-    });
+      // Return the token in the response
+      return res.status(200).json({
+        status: true,
+        message: "User successfully created and logged in",
+        data: { ...regUser.toObject(), token: "Bearer " + token },
+      });
+    }
   } catch (e) {
     res.status(500).send({ status: false, message: e.message, error: e });
   }
 };
 
+// login
 module.exports.loginUser = (req, res, next) => {
   passport.authenticate("local", { session: false }, (err, user, info) => {
     if (err) {
@@ -107,38 +143,22 @@ module.exports.loginUser = (req, res, next) => {
 
 // logout
 module.exports.logoutUser = async (req, res, next) => {
-  const user = await User.findOne({ _id: req.userId });
-  findAndDeleteTokenByUserId(req.userId);
-  res.status(200).send({
-    status: true,
-    message: `${user.personalInfo.email} user logged out`,
-  });
-};
-
-// check if email already in database
-module.exports.emailExists = async (req, res, next) => {
   try {
-    const { email } = req.body;
-    if (email === "") {
-      res.status(200).json({ status: false, message: "No email entered" });
-      return;
-    }
-    const emailExists = await User.findOne({ "personalInfo.email": email });
-    if (emailExists) {
-      res
-        .status(200)
-        .json({ status: false, message: "Email already exists", data: true });
-    } else {
-      res.status(200).json({
-        status: true,
-        message: "User can register with this email",
-        data: false,
-      });
-    }
+    const user = await User.findOne({ _id: req.userId });
+    findAndDeleteTokenByUserId(req.userId);
+    res.status(200).send({
+      status: true,
+      message: `${user.personalInfo.email} user logged out`,
+    });
   } catch (e) {
-    res.status(500).json({ status: false, message: e.message, error: e });
+    res.status(500).send({
+      status: false,
+      message: e.message,
+      errror: e,
+    });
   }
 };
+
 const areAllValuesNull = (obj) => {
   for (const key in obj) {
     if (obj[key] !== null) {
@@ -332,6 +352,7 @@ module.exports.waitlistUser = async (req, res, next) => {
   }
 };
 
+// check invitation code
 module.exports.checkInvititationCode = async (req, res, next) => {
   try {
     const { invitationCode } = req.body;

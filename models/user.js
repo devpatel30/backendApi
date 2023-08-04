@@ -25,6 +25,9 @@ const userSchema = new Schema({
     pronouns: {
       type: String,
     },
+    headline: {
+      type: String,
+    },
     profileImage: {
       fileName: String,
     },

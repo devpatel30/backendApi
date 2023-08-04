@@ -33,7 +33,6 @@ module.exports.isLoggedIn = async (req, res, next) => {
 
     // Set the user ID from the decoded token on the request object
     req.userId = decodedToken.id;
-    console.log(req.userId);
 
     // Continue to the next middleware or route handler
     next();
@@ -103,7 +102,7 @@ module.exports.findAndDeleteTokenByUserId = async (userId) => {
       });
     }
 
-    console.log("Token deleted successfully:", deletedToken);
+    return deletedToken;
   } catch (e) {
     console.error("Error while deleting the token:", e);
     return res
