@@ -1,6 +1,7 @@
-const { uploadImageToS3 } = require("../utils/imageUpload");
+const { uploadImageToS3 } = require("../utils/mediaHandler");
 const { removeNullProperties } = require("../utils/nullKeysChecker");
-const { User } = require("../models");
+const { User, Portfolio, Media } = require("../models");
+const e = require("express");
 
 module.exports.updateProfileImage = async (req, res, next) => {
   try {
@@ -33,7 +34,7 @@ module.exports.updateProfileImage = async (req, res, next) => {
   } catch (error) {
     res
       .status(500)
-      .json({ status: false, message: "Failed to upload image", error: error });
+      .json({ status: false, message: error.message, error: error });
   }
 };
 
@@ -100,7 +101,6 @@ const removeUserItem = async (userId, id, updateItem) => {
     return {
       status: true,
       message: `${updateItem} removed successfully`,
-      data: user,
     };
   } catch (error) {
     return {
@@ -159,3 +159,196 @@ module.exports.customKeys = [
 
   //   { key: "institution-institution", routePath: "remove-institution" },
 ];
+
+module.exports.addPortfolio = async (req, res, next) => {
+  const { title, description, link } = req.body;
+  const thumbnail = req.files["thumbnail"];
+  const imageFiles = req.files["images"];
+  const userId = req.userId;
+
+  const thumbnailData = thumbnail;
+  const thumbnailIds = [];
+
+  const imagesIds = [];
+  const imagesData = imageFiles;
+
+  // upload to images and saves media and then fill array with media Ids
+  const mediaHandler = async (mediaType, mediaIds) => {
+    if (Array.isArray(mediaType) && mediaType.length > 0) {
+      for (const mediaObj of mediaType) {
+        const media = new Media();
+        await media.save();
+        const img = await uploadImageToS3(
+          Media,
+          media._id,
+          mediaObj.buffer,
+          mediaObj.mimeType,
+          "field",
+          "url"
+        );
+        mediaIds.push(media._id);
+      }
+    }
+  };
+
+  await mediaHandler(thumbnailData, thumbnailIds);
+  await mediaHandler(imagesData, imagesIds);
+
+  const portfolio = new Portfolio({
+    name: title,
+    description,
+    link,
+    thumbnail: thumbnailIds,
+    images: imagesIds,
+    createdBy: userId,
+  });
+  await portfolio.save();
+
+  res.status(200).json({
+    status: true,
+    message: "Successfully added portfolio",
+    data: portfolio,
+  });
+};
+
+module.exports.editPortfolio = async (req, res, next) => {
+  const { id, title, description, link } = req.body;
+  const thumbnail = req.files["thumbnail"];
+  const imageFiles = req.files["images"];
+  const userId = req.userId;
+
+  const thumbnailData = thumbnail;
+  const thumbnailIds = [];
+
+  const imagesIds = [];
+  const imagesData = imageFiles;
+
+  // upload to images and saves media and then fill array with media Ids
+  const mediaHandler = async (mediaType, mediaIds) => {
+    if (Array.isArray(mediaType) && mediaType.length > 0) {
+      for (const mediaObj of mediaType) {
+        const media = new Media();
+        await media.save();
+        const img = await uploadImageToS3(
+          Media,
+          media._id,
+          mediaObj.buffer,
+          mediaObj.mimeType,
+          "field",
+          "url"
+        );
+        mediaIds.push(media._id);
+      }
+    }
+  };
+
+  await mediaHandler(thumbnailData, thumbnailIds);
+  await mediaHandler(imagesData, imagesIds);
+
+  // Find and update the portfolio by ID
+  try {
+    const portfolio = await Portfolio.findByIdAndUpdate(id, {
+      $set: {
+        name: title,
+        description,
+        link,
+        thumbnail: thumbnailIds,
+        images: imagesIds,
+      },
+    });
+
+    if (!portfolio) {
+      return res.status(404).json({
+        status: false,
+        message: "Portfolio not found",
+        data: null,
+      });
+    }
+
+    res.status(200).json({
+      status: true,
+      message: "Successfully edited portfolio",
+      data: portfolio,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: false,
+      message: "An error occurred while editing portfolio",
+      data: null,
+    });
+  }
+};
+
+module.exports.fetchRecentPortfolios = async (req, res, next) => {
+  const userId = req.userId;
+
+  // first sort all portfolios in descending order for recent ones and then limit them to 3 only
+  const portfolios = await Portfolio.find({ createdBy: userId })
+    .sort({ createdAt: -1 })
+    .limit(3);
+
+  // providing the portfolio list to only provide the url of the images
+  const portfolioList = portfolios.map((portfolio) => ({
+    id: portfolio._id,
+    name: portfolio.name,
+    description: portfolio.description,
+    link: portfolio.link,
+    thumbnail: portfolio.thumbnail.url,
+    images: portfolio.images.map((image) => image.url),
+  }));
+
+  res.status(200).json({
+    status: true,
+    message: "Successfully fetched recent portfolios",
+    data: portfolioList,
+  });
+};
+
+module.exports.fetchAllPortfolios = async (req, res) => {
+  const userId = req.userId;
+
+  const portfolios = await Portfolio.find({ createdBy: userId });
+
+  const portfolioList = portfolios.map((portfolio) => ({
+    id: portfolio._id,
+    name: portfolio.name,
+    description: portfolio.description,
+    link: portfolio.link,
+    thumbnail: portfolio.thumbnail.url,
+    images: portfolio.images.map((image) => image.url),
+  }));
+
+  res.status(200).json({
+    status: true,
+    message: "Successfully fetched portfolios",
+    data: portfolioList,
+  });
+};
+
+module.exports.deletePortfolio = async (req, res, next) => {
+  const { id } = req.body;
+
+  try {
+    // Find the portfolio by ID and delete it
+    const portfolio = await Portfolio.findById(id);
+
+    if (!portfolio) {
+      return res.status(404).json({
+        status: false,
+        message: "Portfolio not found",
+      });
+    }
+    await Portfolio.findByIdAndDelete(id);
+
+    res.status(200).json({
+      status: true,
+      message: "Portfolio deleted successfully",
+    });
+  } catch (e) {
+    res.status(500).json({
+      status: false,
+      message: e.message,
+      error: e,
+    });
+  }
+};

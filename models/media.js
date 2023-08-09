@@ -6,6 +6,9 @@ const mediaSchema = new Schema({
     type: String,
     enum: ["image", "video"],
   },
+  field: {
+    fileName: String,
+  },
   url: {
     type: String,
   },

@@ -177,6 +177,14 @@ const userSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "InvitationCode",
   },
+  goals: {
+    type: Schema.Types.ObjectId,
+    ref: "Goal",
+  },
+  communityActivity: {
+    type: Schema.Types.ObjectId,
+    ref: "CommunityActivity",
+  },
 });
 
 userSchema.pre(/^find/, function (next) {
@@ -198,25 +206,23 @@ userSchema.pre(/^find/, function (next) {
   next();
 });
 
-// Pre-save hook for institution user
+// pre hook for user to generate invitation code
 userSchema.pre("save", async function (next) {
   try {
-    // Generate a unique invitation code using UUID v4
+    // generating unique invitation code using UUID v4
     const invitationCode = generateInvitationCode();
 
-    // Create a new InvitationCode instance and save it
+    // saving invitation code
     const newInvitationCode = new InvitationCode({
       invitationCode: invitationCode,
       createdBy: this._id,
     });
     await newInvitationCode.save();
-
-    // Link the invitation code to the userSchema
     this.invitationCode = newInvitationCode._id;
 
-    next(); // Continue with the save operation
+    next();
   } catch (err) {
-    next(err); // Pass the error to the next middleware
+    next(err);
   }
 });
 

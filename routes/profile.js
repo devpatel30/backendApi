@@ -1,19 +1,26 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
-const { User } = require("../models");
-
+const { User, Portfolio } = require("../models");
 const passport = require("passport");
 const multer = require("multer");
+const {
+  uploadImageToS3,
+  uploadMultipleImagesToS3,
+} = require("../utils/mediaHandler");
 const {
   updateProfileImage,
   editProfile,
   removeUserItemHandler,
   excludedKeys,
   customKeys,
+  addPortfolio,
+  fetchAllPortfolios,
+  fetchRecentPortfolios,
+  editPortfolio,
+  deletePortfolio,
 } = require("../controllers/profileControllers");
 
-// const {} = require("../controllers/");
 const { isLoggedIn } = require("../middleware/utils");
 const catchAsync = require("../utils/catchAsync");
 
@@ -44,7 +51,7 @@ const getAllKeysForSchema = (schema) => {
 const userKeys = getAllKeysForSchema(User.schema);
 const keys = [...userKeys];
 
-// Function to generate routes for adding data to a given model
+// Function to generate routes for removing data the user
 const generatePatchRoutesForUser = (key, routePath) => {
   if (excludedKeys.includes(key)) {
     // console.log(`Route generation skipped for key: ${key}`);
@@ -79,4 +86,33 @@ keys.forEach((key) => {
   }
 });
 
+router.post(
+  "/add-portfolio",
+  isLoggedIn,
+  upload.fields([
+    { name: "thumbnail", maxCount: 1 },
+    { name: "images", maxCount: 3 },
+  ]),
+  catchAsync(addPortfolio)
+);
+
+router.get(
+  "/fetch-recent-portfolios",
+  isLoggedIn,
+  catchAsync(fetchRecentPortfolios)
+);
+
+router.get("/fetch-all-portfolios", isLoggedIn, catchAsync(fetchAllPortfolios));
+
+router.post(
+  "/edit-portfolio",
+  isLoggedIn,
+  upload.fields([
+    { name: "thumbnail", maxCount: 1 },
+    { name: "images", maxCount: 3 },
+  ]),
+  catchAsync(editPortfolio)
+);
+
+router.delete("/delete-portfolio", isLoggedIn, catchAsync(deletePortfolio));
 module.exports = router;
