@@ -1,39 +1,23 @@
-const Availability = require("./availability");
-const Company = require("./company");
-const EmploymentType = require("./employmentType");
-const Expertise = require("./expertise");
-const Interest = require("./interest");
-const InvitationCode = require("./invitationCode");
-const JobTitle = require("./jobTitle");
-const Language = require("./language");
-const Major = require("./major");
-const Media = require("./media");
-const MentorshipStyle = require("./mentorshipStyle");
-const Otp = require("./otp");
-const Portfolio = require("./portfolio");
-const School = require("./school");
-const Skill = require("./skill");
-const User = require("./user");
-const Token = require("./token");
-const Waitlist = require("./waitlist");
-
-module.exports = {
-  Availability,
-  Company,
-  EmploymentType,
-  Expertise,
-  Interest,
-  InvitationCode,
-  JobTitle,
-  Language,
-  Major,
-  Media,
-  MentorshipStyle,
-  Otp,
-  Portfolio,
-  School,
-  Skill,
-  User,
-  Token,
-  Waitlist,
+const fs = require("fs");
+const path = require("path");
+// dynamic loading and exporting models in a centralized fashion
+const loadModel = (modelName) => {
+  const modelPath = path.join(__dirname, modelName);
+  return require(modelPath);
 };
+
+const modelFiles = fs.readdirSync(__dirname);
+
+const validModelNames = modelFiles
+  .filter((file) => file.endsWith(".js") && file !== "index.js")
+  .map((file) => file.replace(".js", ""));
+
+const models = {};
+
+for (const modelName of validModelNames) {
+  const model = loadModel(modelName);
+  const capitalizedModelName =
+    modelName.charAt(0).toUpperCase() + modelName.slice(1);
+  models[capitalizedModelName] = model;
+}
+module.exports = models;

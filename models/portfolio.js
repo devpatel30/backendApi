@@ -21,6 +21,10 @@ const portfolioSchema = new Schema({
       ref: "Media",
     },
   ],
+  createdBy: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+  },
 });
 portfolioSchema.pre(/^find/, function (next) {
   this.populate(["thumbnail", "images"]);
