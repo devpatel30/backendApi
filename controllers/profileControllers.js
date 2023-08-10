@@ -287,20 +287,10 @@ module.exports.fetchRecentPortfolios = async (req, res, next) => {
     .sort({ createdAt: -1 })
     .limit(3);
 
-  // providing the portfolio list to only provide the url of the images
-  const portfolioList = portfolios.map((portfolio) => ({
-    id: portfolio._id,
-    name: portfolio.name,
-    description: portfolio.description,
-    link: portfolio.link,
-    thumbnail: portfolio.thumbnail.url,
-    images: portfolio.images.map((image) => image.url),
-  }));
-
   res.status(200).json({
     status: true,
     message: "Successfully fetched recent portfolios",
-    data: portfolioList,
+    data: portfolios,
   });
 };
 
@@ -309,19 +299,10 @@ module.exports.fetchAllPortfolios = async (req, res) => {
 
   const portfolios = await Portfolio.find({ createdBy: userId });
 
-  const portfolioList = portfolios.map((portfolio) => ({
-    id: portfolio._id,
-    name: portfolio.name,
-    description: portfolio.description,
-    link: portfolio.link,
-    thumbnail: portfolio.thumbnail.url,
-    images: portfolio.images.map((image) => image.url),
-  }));
-
   res.status(200).json({
     status: true,
     message: "Successfully fetched portfolios",
-    data: portfolioList,
+    data: portfolios,
   });
 };
 
