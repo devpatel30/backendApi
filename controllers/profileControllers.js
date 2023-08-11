@@ -280,7 +280,7 @@ module.exports.editPortfolio = async (req, res, next) => {
 };
 
 module.exports.fetchRecentPortfolios = async (req, res, next) => {
-  const userId = req.userId;
+  const userId = req.params.id;
 
   // first sort all portfolios in descending order for recent ones and then limit them to 3 only
   const portfolios = await Portfolio.find({ createdBy: userId })
@@ -294,8 +294,8 @@ module.exports.fetchRecentPortfolios = async (req, res, next) => {
   });
 };
 
-module.exports.fetchAllPortfolios = async (req, res) => {
-  const userId = req.userId;
+module.exports.fetchAllPortfolios = async (req, res, next) => {
+  const userId = req.params.id;
 
   const portfolios = await Portfolio.find({ createdBy: userId });
 
