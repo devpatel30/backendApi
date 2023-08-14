@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
-const { User, Portfolio } = require("../models");
+const { User, Experience } = require("../models");
 const passport = require("passport");
 const multer = require("multer");
 
@@ -16,6 +16,13 @@ const {
   fetchRecentPortfolios,
   editPortfolio,
   deletePortfolio,
+  addSchool,
+  editSchool,
+  deleteSchool,
+  fetchSchools,
+  addExperience,
+  editExperience,
+  deleteExperience,
 } = require("../controllers/profileControllers");
 
 const { isLoggedIn } = require("../middleware/utils");
@@ -110,163 +117,61 @@ router.post(
 
 router.delete("/delete-portfolio", isLoggedIn, catchAsync(deletePortfolio));
 
+router.post("/education/add-school", isLoggedIn, catchAsync(addSchool));
+
+router.patch("/education/edit-school", isLoggedIn, catchAsync(editSchool));
+
+router.delete("/education/delete-school", isLoggedIn, catchAsync(deleteSchool));
+
+router.get("/education/fetch-schools/:id", catchAsync(fetchSchools));
+
+router.post("/add-experience", isLoggedIn, catchAsync(addExperience));
+
+router.patch("/edit-experience", isLoggedIn, catchAsync(editExperience));
+
+router.delete("/delete-experience", isLoggedIn, catchAsync(deleteExperience));
+
 router.post(
-  "/education/add-school",
+  "/update-goals",
   isLoggedIn,
   catchAsync(async (req, res, next) => {
     try {
       const userId = req.userId;
-      const { schoolId, majorId, startDate, endDate } = req.body;
-      const updateObj = {
-        school: schoolId,
-        major: majorId,
-        startDate: startDate,
-        endDate: endDate,
-      };
-      const user = await User.findOneAndUpdate(
+      const { careerGoals, skillGoals, financialGoals, socialGoals } = req.body;
+
+      // Find and update the user's goals
+      const updatedUser = await User.findOneAndUpdate(
         { _id: userId },
-        { $push: { education: updateObj } },
-        { new: true }
-      );
-      return res.status(200).json({
-        status: true,
-        message: "School added to user",
-        data: { ...user.toObject(), token: req.headers.authorization },
-      });
-    } catch (e) {
-      return res
-        .status(500)
-        .json({ status: false, message: e.message, error: e });
-    }
-  })
-);
-
-router.patch(
-  "/education/edit-school",
-  isLoggedIn,
-  catchAsync(async (req, res, next) => {
-    try {
-      const {
-        educationId,
-        schoolId,
-        majorId = null,
-        startDate,
-        endDate,
-      } = req.body;
-      const userId = req.userId;
-      // Create an object with the provided school data
-      const updateObj = {
-        school: schoolId,
-        major: majorId,
-        startDate: startDate,
-        endDate: endDate,
-      };
-      removeNullProperties(updateObj);
-      // Find the user by ID and update the matching education object
-      const user = await User.findOneAndUpdate(
-        { _id: userId, "education._id": educationId },
-        { $set: { "education.$": updateObj } },
+        {
+          $set: {
+            careerGoals,
+            skillGoals,
+            financialGoals,
+            socialGoals,
+          },
+        },
         { new: true }
       );
 
-      if (!user) {
-        return res.status(404).json({
-          status: false,
-          message: "User or education not found",
-        });
-      }
-      return res.status(200).json({
-        status: true,
-        message: "School edited successfully",
-        data: { ...user.toObject(), token: req.headers.authorization },
-      });
-    } catch (e) {
-      return res
-        .status(500)
-        .json({ status: false, message: e.message, error: e });
-    }
-  })
-);
-
-router.delete(
-  "/education/delete-school",
-  isLoggedIn,
-  catchAsync(async (req, res, next) => {
-    try {
-      const userId = req.userId;
-      const { educationId } = req.body;
-
-      // Find the user by ID
-      const user = await User.findById({ _id: userId });
-
-      if (!user) {
+      if (!updatedUser) {
         return res.status(404).json({
           status: false,
           message: "User not found",
         });
       }
 
-      // Find the index of the school to be deleted
-      const schoolIndex = user.education.findIndex(
-        (school) => school._id.toString() === educationId
-      );
-
-      if (schoolIndex === -1) {
-        return res.status(404).json({
-          status: false,
-          message: "School not found",
-        });
-      }
-
-      // Remove the school from the education array
-      user.education.splice(schoolIndex, 1);
-
-      // saving the updated user
-      await user.save();
-
       res.status(200).json({
         status: true,
-        message: "School deleted successfully",
+        message: "Goals updated successfully",
+        data: goal,
       });
-    } catch (error) {
+    } catch (e) {
       res.status(500).json({
         status: false,
-        message: "An error occurred while deleting the school",
-        error: error.message,
+        message: e.message,
+        error: e,
       });
     }
   })
 );
-
-router.get(
-  "/education/fetch-schools/:id",
-  catchAsync(async (req, res, next) => {
-    try {
-      const userId = req.params.id;
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({
-          status: false,
-          message: "User not found",
-        });
-      }
-
-      // Extract the education array from the user object
-      const schools = user.education;
-
-      res.status(200).json({
-        status: true,
-        message: "User schools fetched successfully",
-        data: schools,
-      });
-    } catch (error) {
-      res.status(500).json({
-        status: false,
-        message: "An error occurred while fetching user schools",
-        error: error.message,
-      });
-    }
-  })
-);
-
 module.exports = router;
