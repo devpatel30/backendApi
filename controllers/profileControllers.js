@@ -1,6 +1,6 @@
 const { uploadImageToS3 } = require("../utils/mediaHandler");
 const { removeNullProperties } = require("../utils/nullKeysChecker");
-const { User, Portfolio, Media } = require("../models");
+const { User, Portfolio, Media, Experience } = require("../models");
 const e = require("express");
 
 module.exports.updateProfileImage = async (req, res, next) => {
@@ -324,6 +324,261 @@ module.exports.deletePortfolio = async (req, res, next) => {
     res.status(200).json({
       status: true,
       message: "Portfolio deleted successfully",
+    });
+  } catch (e) {
+    res.status(500).json({
+      status: false,
+      message: e.message,
+      error: e,
+    });
+  }
+};
+
+module.exports.addSchool = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+    const { schoolId, majorId, startDate, endDate } = req.body;
+    const updateObj = {
+      school: schoolId,
+      major: majorId,
+      startDate: startDate,
+      endDate: endDate,
+    };
+    const user = await User.findOneAndUpdate(
+      { _id: userId },
+      { $push: { education: updateObj } },
+      { new: true }
+    );
+    return res.status(200).json({
+      status: true,
+      message: "School added to user",
+      data: { ...user.toObject(), token: req.headers.authorization },
+    });
+  } catch (e) {
+    return res
+      .status(500)
+      .json({ status: false, message: e.message, error: e });
+  }
+};
+
+module.exports.editSchool = async (req, res, next) => {
+  try {
+    const {
+      educationId,
+      schoolId,
+      majorId = null,
+      startDate,
+      endDate,
+    } = req.body;
+    const userId = req.userId;
+    // Create an object with the provided school data
+    const updateObj = {
+      school: schoolId,
+      major: majorId,
+      startDate: startDate,
+      endDate: endDate,
+    };
+    removeNullProperties(updateObj);
+    // Find the user by ID and update the matching education object
+    const user = await User.findOneAndUpdate(
+      { _id: userId, "education._id": educationId },
+      { $set: { "education.$": updateObj } },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        status: false,
+        message: "User or education not found",
+      });
+    }
+    return res.status(200).json({
+      status: true,
+      message: "School edited successfully",
+      data: { ...user.toObject(), token: req.headers.authorization },
+    });
+  } catch (e) {
+    return res
+      .status(500)
+      .json({ status: false, message: e.message, error: e });
+  }
+};
+
+module.exports.deleteSchool = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+    const { educationId } = req.body;
+
+    // Find the user by ID
+    const user = await User.findById({ _id: userId });
+
+    if (!user) {
+      return res.status(404).json({
+        status: false,
+        message: "User not found",
+      });
+    }
+
+    // Find the index of the school to be deleted
+    const schoolIndex = user.education.findIndex(
+      (school) => school._id.toString() === educationId
+    );
+
+    if (schoolIndex === -1) {
+      return res.status(404).json({
+        status: false,
+        message: "School not found",
+      });
+    }
+
+    // Remove the school from the education array
+    user.education.splice(schoolIndex, 1);
+
+    // saving the updated user
+    await user.save();
+
+    res.status(200).json({
+      status: true,
+      message: "School deleted successfully",
+    });
+  } catch (e) {
+    res.status(500).json({
+      status: false,
+      message: e.message,
+      error: e,
+    });
+  }
+};
+
+module.exports.fetchSchools = async (req, res, next) => {
+  try {
+    const userId = req.params.id;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        status: false,
+        message: "User not found",
+      });
+    }
+
+    // Extract the education array from the user object
+    const schools = user.education;
+
+    res.status(200).json({
+      status: true,
+      message: "User schools fetched successfully",
+      data: schools,
+    });
+  } catch (e) {
+    res.status(500).json({
+      status: false,
+      message: e.message,
+      error: e,
+    });
+  }
+};
+
+module.exports.addExperience = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+    const { jobTitleId, companyId, employmentType, startDate, endDate } =
+      req.body;
+    const experience = new Experience({
+      jobTitleId,
+      companyId,
+      employmentType,
+      startDate,
+      endDate,
+    });
+
+    // Save the experience
+    await experience.save();
+
+    // Add the experience's _id to the user's experiences array
+    const user = await User.findById(userId);
+    user.experiences.push(experience._id);
+    await user.save();
+
+    res.status(200).json({
+      status: true,
+      message: "Experience added to user",
+      data: user,
+    });
+  } catch (e) {
+    res.status(500).json({
+      status: false,
+      message: e.message,
+      error: e,
+    });
+  }
+};
+
+module.exports.editExperience = async (req, res, next) => {
+  try {
+    const {
+      experienceId,
+      jobTitleId,
+      companyId,
+      employmentType,
+      startDate,
+      endDate,
+    } = req.body;
+
+    // Find and update the experience by ID
+    const experience = await Experience.findByIdAndUpdate(
+      { _id: experienceId },
+      {
+        $set: {
+          jobTitleId,
+          companyId,
+          employmentType,
+          startDate,
+          endDate,
+        },
+      },
+      { new: true }
+    );
+    const userId = req.userId;
+    const user = await User.findOne({ _id: userId });
+    if (!experience) {
+      return res.status(404).json({
+        status: false,
+        message: "Experience not found",
+      });
+    }
+
+    res.status(200).json({
+      status: true,
+      message: "Successfully edited experience",
+      data: user,
+    });
+  } catch (e) {
+    res.status(500).json({
+      status: false,
+      message: e.message,
+      error: e,
+    });
+  }
+};
+
+module.exports.deleteExperience = async (req, res, next) => {
+  try {
+    const { experienceId } = req.body;
+    // Find and delete
+    const deletedExperience = await Experience.findByIdAndDelete({
+      _id: experienceId,
+    });
+
+    if (!deletedExperience) {
+      return res.status(404).json({
+        status: false,
+        message: "Experience not found",
+      });
+    }
+
+    res.status(200).json({
+      status: true,
+      message: "Experience deleted successfully",
     });
   } catch (e) {
     res.status(500).json({

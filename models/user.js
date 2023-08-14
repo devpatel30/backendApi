@@ -98,7 +98,6 @@ const userSchema = new Schema({
       },
     },
   ],
-
   mentor: {
     jobTitle: {
       type: Schema.Types.ObjectId,
@@ -185,6 +184,12 @@ const userSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "CommunityActivity",
   },
+  experiences: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Experience",
+    },
+  ],
 });
 
 userSchema.pre(/^find/, function (next) {
@@ -201,6 +206,7 @@ userSchema.pre(/^find/, function (next) {
     "mentor.availability",
     "institution.creatorInfo.jobTitle",
     "institution.institution",
+    "experiences",
     // "invitationCode",
   ]);
   next();
