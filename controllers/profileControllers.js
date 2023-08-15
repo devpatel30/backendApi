@@ -588,3 +588,66 @@ module.exports.deleteExperience = async (req, res, next) => {
     });
   }
 };
+
+module.exports.updateGoals = async (req, res, next) => {
+  try {
+    const userId = req.userId;
+    const { careerGoals, skillGoals, financialGoals, socialGoals } = req.body;
+
+    // Find the user by ID
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        status: false,
+        message: "User not found",
+      });
+    }
+
+    // Check if the user already has a goal
+    if (user.goals) {
+      // If user has a goal, update it
+      const goal = await Goal.findByIdAndUpdate(
+        user.goals,
+        {
+          careerGoals,
+          skillGoals,
+          financialGoals,
+          socialGoals,
+        },
+        { new: true }
+      );
+
+      return res.status(200).json({
+        status: true,
+        message: "Goals updated successfully",
+        data: user,
+      });
+    } else {
+      // If user doesn't have a goal, create a new goal
+      const newGoal = new Goal({
+        careerGoals,
+        skillGoals,
+        financialGoals,
+        socialGoals,
+      });
+
+      await newGoal.save();
+
+      user.goals = newGoal._id;
+      await user.save();
+
+      return res.status(200).json({
+        status: true,
+        message: "Goals created successfully",
+        data: user,
+      });
+    }
+  } catch (e) {
+    return res.status(500).json({
+      status: false,
+      message: e.message,
+      error: e,
+    });
+  }
+};

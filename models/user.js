@@ -207,6 +207,7 @@ userSchema.pre(/^find/, function (next) {
     "institution.creatorInfo.jobTitle",
     "institution.institution",
     "experiences",
+    "goals",
     // "invitationCode",
   ]);
   next();

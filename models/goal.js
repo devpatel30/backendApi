@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
-const goalScehma = new Schema({
+const goalSchema = new Schema({
   careerGoals: {
     type: String,
   },
@@ -16,4 +16,4 @@ const goalScehma = new Schema({
   },
 });
 
-module.exports = new mongoose.model("Goal", goalScehma);
+module.exports = new mongoose.model("Goal", goalSchema);
