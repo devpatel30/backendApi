@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
-const { User, Experience } = require("../models");
+const { User, Goal } = require("../models");
 const passport = require("passport");
 const multer = require("multer");
 
@@ -23,6 +23,7 @@ const {
   addExperience,
   editExperience,
   deleteExperience,
+  updateGoals,
 } = require("../controllers/profileControllers");
 
 const { isLoggedIn } = require("../middleware/utils");
@@ -92,7 +93,7 @@ keys.forEach((key) => {
 });
 
 router.post(
-  "/add-portfolio/:id",
+  "/add-portfolio",
   isLoggedIn,
   upload.fields([
     { name: "thumbnail", maxCount: 1 },
@@ -131,47 +132,6 @@ router.patch("/edit-experience", isLoggedIn, catchAsync(editExperience));
 
 router.delete("/delete-experience", isLoggedIn, catchAsync(deleteExperience));
 
-router.post(
-  "/update-goals",
-  isLoggedIn,
-  catchAsync(async (req, res, next) => {
-    try {
-      const userId = req.userId;
-      const { careerGoals, skillGoals, financialGoals, socialGoals } = req.body;
+router.post("/update-goals", isLoggedIn, catchAsync(updateGoals));
 
-      // Find and update the user's goals
-      const updatedUser = await User.findOneAndUpdate(
-        { _id: userId },
-        {
-          $set: {
-            careerGoals,
-            skillGoals,
-            financialGoals,
-            socialGoals,
-          },
-        },
-        { new: true }
-      );
-
-      if (!updatedUser) {
-        return res.status(404).json({
-          status: false,
-          message: "User not found",
-        });
-      }
-
-      res.status(200).json({
-        status: true,
-        message: "Goals updated successfully",
-        data: goal,
-      });
-    } catch (e) {
-      res.status(500).json({
-        status: false,
-        message: e.message,
-        error: e,
-      });
-    }
-  })
-);
 module.exports = router;
