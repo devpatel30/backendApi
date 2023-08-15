@@ -1,6 +1,6 @@
 const { uploadImageToS3 } = require("../utils/mediaHandler");
 const { removeNullProperties } = require("../utils/nullKeysChecker");
-const { User, Portfolio, Media, Experience } = require("../models");
+const { User, Portfolio, Media, Experience, Goal } = require("../models");
 const e = require("express");
 
 module.exports.updateProfileImage = async (req, res, next) => {
