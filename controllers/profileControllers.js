@@ -29,7 +29,7 @@ module.exports.updateProfileImage = async (req, res, next) => {
     res.status(200).json({
       status: true,
       message: "Successfully uploaded image",
-      data: { imageUrl: imageUrl, token: req.headers.authorization },
+      data: { ...imageUrl.toObject(), token: req.headers.authorization },
     });
   } catch (error) {
     res
@@ -203,11 +203,12 @@ module.exports.addPortfolio = async (req, res, next) => {
     createdBy: userId,
   });
   await portfolio.save();
+  const resPort = await Portfolio.findOne({ _id: portfolio._id });
 
   res.status(200).json({
     status: true,
     message: "Successfully added portfolio",
-    data: portfolio,
+    data: resPort,
   });
 };
 
@@ -241,19 +242,25 @@ module.exports.editPortfolio = async (req, res, next) => {
       }
     }
   };
-
-  await mediaHandler(thumbnailData, thumbnailIds);
-  await mediaHandler(imagesData, imagesIds);
+  if (thumbnail !== undefined) {
+    await mediaHandler(thumbnailData, thumbnailIds);
+  }
+  if (imageFiles !== undefined) {
+    await mediaHandler(imagesData, imagesIds);
+  }
+  const updateObj = {
+    name: title,
+    description: description,
+    link: link,
+    thumbnail: thumbnailIds,
+    images: imagesIds,
+  };
 
   // Find and update the portfolio by ID
   try {
     const portfolio = await Portfolio.findByIdAndUpdate(id, {
       $set: {
-        name: title,
-        description,
-        link,
-        thumbnail: thumbnailIds,
-        images: imagesIds,
+        updateObj,
       },
     });
 
@@ -265,16 +272,16 @@ module.exports.editPortfolio = async (req, res, next) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       status: true,
       message: "Successfully edited portfolio",
       data: portfolio,
     });
-  } catch (error) {
-    res.status(500).json({
+  } catch (e) {
+    return res.status(500).json({
       status: false,
-      message: "An error occurred while editing portfolio",
-      data: null,
+      message: e.message,
+      error: e,
     });
   }
 };
