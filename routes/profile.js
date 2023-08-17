@@ -106,7 +106,7 @@ router.get("/fetch-recent-portfolios/:id", catchAsync(fetchRecentPortfolios));
 
 router.get("/fetch-all-portfolios/:id", catchAsync(fetchAllPortfolios));
 
-router.post(
+router.patch(
   "/edit-portfolio",
   isLoggedIn,
   upload.fields([

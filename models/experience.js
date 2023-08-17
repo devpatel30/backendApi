@@ -29,5 +29,8 @@ const experienceSchema = new Schema({
     type: Date,
   },
 });
-
+experienceSchema.pre(/^find/, function (next) {
+  this.populate(["jobTitleId", "companyId"]);
+  next();
+});
 module.exports = mongoose.model("Experience", experienceSchema);
