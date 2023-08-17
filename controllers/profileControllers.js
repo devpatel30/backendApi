@@ -509,7 +509,7 @@ module.exports.addExperience = async (req, res, next) => {
     res.status(200).json({
       status: true,
       message: "Experience added to user",
-      data: user,
+      data: { ...user.toObject(), token: req.headers.authorization },
     });
   } catch (e) {
     res.status(500).json({
@@ -557,7 +557,7 @@ module.exports.editExperience = async (req, res, next) => {
     res.status(200).json({
       status: true,
       message: "Successfully edited experience",
-      data: user,
+      data: { ...user.toObject(), token: req.headers.authorization },
     });
   } catch (e) {
     res.status(500).json({
@@ -628,7 +628,7 @@ module.exports.updateGoals = async (req, res, next) => {
       return res.status(200).json({
         status: true,
         message: "Goals updated successfully",
-        data: user,
+        data: { ...user.toObject(), token: req.headers.authorization },
       });
     } else {
       // If user doesn't have a goal, create a new goal
