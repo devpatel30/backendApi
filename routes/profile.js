@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
-const { User, Goal } = require("../models");
+const { User, Company } = require("../models");
 const passport = require("passport");
 const multer = require("multer");
 
@@ -24,6 +24,10 @@ const {
   editExperience,
   deleteExperience,
   updateGoals,
+  editMeetingDuration,
+  updateMenteeLimit,
+  addMentorshipStyle,
+  editInstituitonInfo,
 } = require("../controllers/profileControllers");
 
 const { isLoggedIn } = require("../middleware/utils");
@@ -63,7 +67,6 @@ const generatePatchRoutesForUser = (key, routePath) => {
     // console.log(`Route generation skipped for key: ${key}`);
     return;
   }
-
   router.patch(
     routePath,
     isLoggedIn,
@@ -134,4 +137,25 @@ router.delete("/delete-experience", isLoggedIn, catchAsync(deleteExperience));
 
 router.post("/update-goals", isLoggedIn, catchAsync(updateGoals));
 
+router.patch(
+  "/mentor/edit-meeting-duration",
+  isLoggedIn,
+  catchAsync(editMeetingDuration)
+);
+
+router.patch(
+  "/mentor/update-no-of-mentees",
+  isLoggedIn,
+  catchAsync(updateMenteeLimit)
+);
+router.patch(
+  "/mentor/add-mentorshipStyle",
+  isLoggedIn,
+  catchAsync(addMentorshipStyle)
+);
+router.patch(
+  "/institution/edit-info",
+  isLoggedIn,
+  catchAsync(editInstituitonInfo)
+);
 module.exports = router;
