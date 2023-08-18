@@ -622,12 +622,14 @@ module.exports.updateGoals = async (req, res, next) => {
     if (user.goals) {
       // If user has a goal, update it
       const goal = await Goal.findByIdAndUpdate(
-        user.goals,
+        { _id: user.goals._id },
         {
-          careerGoals,
-          skillGoals,
-          financialGoals,
-          socialGoals,
+          $set: {
+            careerGoals,
+            skillGoals,
+            financialGoals,
+            socialGoals,
+          },
         },
         { new: true }
       );
@@ -635,7 +637,7 @@ module.exports.updateGoals = async (req, res, next) => {
       return res.status(200).json({
         status: true,
         message: "Goals updated successfully",
-        data: { ...user.toObject(), token: req.headers.authorization },
+        data: goal,
       });
     } else {
       // If user doesn't have a goal, create a new goal
@@ -654,7 +656,7 @@ module.exports.updateGoals = async (req, res, next) => {
       return res.status(200).json({
         status: true,
         message: "Goals created successfully",
-        data: user,
+        data: newGoal,
       });
     }
   } catch (e) {
