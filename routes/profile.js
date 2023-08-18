@@ -28,6 +28,7 @@ const {
   updateMenteeLimit,
   addMentorshipStyle,
   editInstituitonInfo,
+  editExpertise,
 } = require("../controllers/profileControllers");
 
 const { isLoggedIn } = require("../middleware/utils");
@@ -64,7 +65,6 @@ const keys = [...userKeys];
 // Function to generate routes for removing data the user
 const generatePatchRoutesForUser = (key, routePath) => {
   if (excludedKeys.includes(key)) {
-    // console.log(`Route generation skipped for key: ${key}`);
     return;
   }
   router.patch(
@@ -148,14 +148,19 @@ router.patch(
   isLoggedIn,
   catchAsync(updateMenteeLimit)
 );
+
 router.patch(
   "/mentor/add-mentorshipStyle",
   isLoggedIn,
   catchAsync(addMentorshipStyle)
 );
+
 router.patch(
   "/institution/edit-info",
   isLoggedIn,
   catchAsync(editInstituitonInfo)
 );
+
+router.patch("/mentor/edit-expertise", isLoggedIn, catchAsync(editExpertise));
+
 module.exports = router;

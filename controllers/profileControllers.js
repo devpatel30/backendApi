@@ -104,7 +104,6 @@ const removeUserItem = async (userId, id, updateItem) => {
         message: "User not found",
       };
     }
-
     return {
       status: true,
       message: `${updateItem} removed successfully`,
@@ -163,6 +162,7 @@ module.exports.customKeys = [
   { key: "mentor.expertise", routePath: "remove-expertise" },
   { key: "mentor.mentorshipStyle", routePath: "mentor/remove-mentorshipstyle" },
   { key: "mentor.jobtitle", routePath: "remove-jobtitle" },
+  { key: "mentor.expertise", routePath: "mentor/remove-expertise" },
 
   //   { key: "institution-institution", routePath: "remove-institution" },
 ];
@@ -708,6 +708,20 @@ module.exports.addMentorshipStyle = async (req, res, next) => {
   });
 };
 
+module.exports.editExpertise = async (req, res, next) => {
+  const { expertise } = req.body;
+  const user = await User.findByIdAndUpdate(
+    { _id: req.userId },
+    { $push: { "mentor.expertise": expertise } },
+    { new: true }
+  );
+  return res.status(200).json({
+    status: true,
+    message: "Successfully updated area of expertise",
+    data: { ...user.toObject(), token: req.headers.authorization },
+  });
+};
+
 module.exports.editInstituitonInfo = async (req, res, next) => {
   const { about, website, address, name } = req.body;
 
@@ -721,7 +735,6 @@ module.exports.editInstituitonInfo = async (req, res, next) => {
   user.institution.institution = updateInstitution;
   user.about = about;
   await user.save();
-  console.log(user.institution);
 
   return res.status(200).json({
     status: true,
