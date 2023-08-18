@@ -1,6 +1,13 @@
 const { uploadImageToS3 } = require("../utils/mediaHandler");
 const { removeNullProperties } = require("../utils/nullKeysChecker");
-const { User, Portfolio, Media, Experience, Goal } = require("../models");
+const {
+  User,
+  Portfolio,
+  Media,
+  Experience,
+  Goal,
+  Company,
+} = require("../models");
 const e = require("express");
 
 module.exports.updateProfileImage = async (req, res, next) => {
@@ -154,7 +161,7 @@ module.exports.customKeys = [
   { key: "personalInfo.skills", routePath: "remove-skill" },
   { key: "personalInfo.interests", routePath: "remove-interest" },
   { key: "mentor.expertise", routePath: "remove-expertise" },
-  { key: "mentor.mentorshipstyle", routePath: "remove-mentorshipstyle" },
+  { key: "mentor.mentorshipStyle", routePath: "mentor/remove-mentorshipstyle" },
   { key: "mentor.jobtitle", routePath: "remove-jobtitle" },
 
   //   { key: "institution-institution", routePath: "remove-institution" },
@@ -657,4 +664,68 @@ module.exports.updateGoals = async (req, res, next) => {
       error: e,
     });
   }
+};
+
+module.exports.editMeetingDuration = async (req, res, next) => {
+  const { duration } = req.body;
+  const user = await User.findByIdAndUpdate(
+    { _id: req.userId },
+    { $set: { "mentor.mentorTimeDuration": duration } },
+    { new: true }
+  );
+  return res.status(200).json({
+    status: true,
+    message: "Successfully updated meeting time",
+    data: { ...user.toObject(), token: req.headers.authorization },
+  });
+};
+
+module.exports.updateMenteeLimit = async (req, res, next) => {
+  const { noOfMentees } = req.body;
+  const user = await User.findByIdAndUpdate(
+    { _id: req.userId },
+    { $set: { "mentor.noOfMentees": noOfMentees } },
+    { new: true }
+  );
+  return res.status(200).json({
+    status: true,
+    message: "Successfully updated number of mentees",
+    data: { ...user.toObject(), token: req.headers.authorization },
+  });
+};
+
+module.exports.addMentorshipStyle = async (req, res, next) => {
+  const { style } = req.body;
+  const user = await User.findByIdAndUpdate(
+    { _id: req.userId },
+    { $set: { "mentor.mentorshipStyle": style } },
+    { new: true }
+  );
+  return res.status(200).json({
+    status: true,
+    message: "Successfully updated number of mentees",
+    data: { ...user.toObject(), token: req.headers.authorization },
+  });
+};
+
+module.exports.editInstituitonInfo = async (req, res, next) => {
+  const { about, website, address, name } = req.body;
+
+  const user = await User.findById({ _id: req.userId });
+  const companyId = user.institution.institution._id;
+  const updateInstitution = await Company.findByIdAndUpdate(
+    { _id: companyId },
+    { $set: { name, address, website } },
+    { new: true }
+  );
+  user.institution.institution = updateInstitution;
+  user.about = about;
+  await user.save();
+  console.log(user.institution);
+
+  return res.status(200).json({
+    status: true,
+    message: "Successfully updated number of mentees",
+    data: { ...user.toObject(), token: req.headers.authorization },
+  });
 };

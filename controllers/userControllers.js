@@ -14,7 +14,7 @@ const {
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const crypto = require("node:crypto");
 
-const { Expertise, Availability } = require("../models");
+const { Expertise, Availability, Company } = require("../models");
 const { User, Token } = require("../models");
 
 // const User = require("../models/user");
@@ -270,6 +270,10 @@ module.exports.completeUserProfile = async (req, res, next) => {
       );
     }
 
+    const newInstitution = new Company(institution);
+    await newInstitution.save();
+    const institutionId = newInstitution._id;
+
     const loggedInUserEmail = req.user.personalInfo.email;
     const updateObj = {
       "personalInfo.userType": userType,
@@ -301,7 +305,7 @@ module.exports.completeUserProfile = async (req, res, next) => {
           jobTitle: jobTitle,
           employeeId: employeeId,
         },
-        institution: institution,
+        institution: institutionId,
       },
       about: about,
     };
