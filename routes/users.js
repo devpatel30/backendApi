@@ -25,6 +25,7 @@ const {
   getImageLink,
   emailExists,
   logoutUser,
+  googleAuth
 } = require("../controllers/userControllers");
 
 require("../config/appAuth");
@@ -35,6 +36,9 @@ router.post("/check-email", catchAsync(emailExists));
 
 // login
 router.post("/login", loginUser);
+
+// Google Auth
+router.post("/google-auth", catchAsync(googleAuth))
 
 const tokenBlacklist = new Set();
 // logout
