@@ -141,6 +141,52 @@ module.exports.loginUser = (req, res, next) => {
   })(req, res, next);
 };
 
+// google Auth
+module.exports.googleAuth = async (req, res, next) => {
+  const { email, clientId } = req.body
+  // 1. Check for required data
+  if (!email || !clientId) {
+    return res.status(200).json({
+      status: false,
+      message: 'Missing required data'
+    })
+  }
+  // 2. Getting the user from DB
+  const user = await User.findOne({ "personalInfo.email": email })
+  // 3. User tries to log in
+  if (user) {
+    const token = generateJWT(user);
+    return res.status(200).json({
+      status: true,
+      isUserExists: true,
+      message: "User successfully logged in",
+      data: { user, token: "Bearer " + token }
+    })
+  } else if (req.body.isGoogleSignUp && req.body.userType && !user) { // 4. User tries to sign up
+    const { userType } = req.body
+    const username = email
+    const newUser = new User({
+      personalInfo: { userType, email },
+      username,
+    });
+    const regUser = await User.register(newUser, clientId);
+    const token = generateJWT(regUser);
+    return res.status(200).json({
+      status: true,
+      isUserExists: true,
+      message: "User successfully created and logged in",
+      data: { ...regUser.toObject(), token: "Bearer " + token },
+    });
+  } else { // 5. User doesn't Exist & not sign up
+    return res.status(200).json({
+      status: false,
+      isUserExists: false,
+      message: "User is not signed in",
+      data: { email, clientId }
+    })
+  }
+}
+
 // logout
 module.exports.logoutUser = async (req, res, next) => {
   try {

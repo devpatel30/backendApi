@@ -37,7 +37,7 @@ router.post("/check-email", catchAsync(emailExists));
 // login
 router.post("/login", loginUser);
 
-// Google Auth
+// google auth
 router.post("/google-auth", catchAsync(googleAuth))
 
 const tokenBlacklist = new Set();
