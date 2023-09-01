@@ -25,7 +25,8 @@ const {
   getImageLink,
   emailExists,
   logoutUser,
-  googleAuth
+  googleAuth,
+  fetchUserProfile
 } = require("../controllers/userControllers");
 
 require("../config/appAuth");
@@ -105,4 +106,8 @@ router.get(
   passport.authenticate("jwt", { session: false }),
   catchAsync(getImageLink)
 );
+
+// User profile
+router.get('/userProfile', isLoggedIn, fetchUserProfile)
+
 module.exports = router;

@@ -22,6 +22,9 @@ const Waitlist = require("../models/waitlist");
 const InvitationCode = require("../models/invitationCode");
 
 const { findAndDeleteTokenByUserId } = require("../middleware/utils");
+const catchAsync = require("../utils/catchAsync");
+const Connection = require("../models/connection")
+const Follow = require("../models/follow")
 
 require("../config/appAuth");
 
@@ -560,3 +563,36 @@ module.exports.getImageLink = async (req, res, next) => {
     res.status(500).json({ status: false, message: e.message, error: e });
   }
 };
+
+module.exports.fetchUserProfile = catchAsync(async (req, res, next) => {
+  const { userId } = req.body
+  // 1. Check for required data
+  if (!userId) {
+    return res.status(200).json({
+      status: false,
+      message: 'Please provide required data'
+    })
+  }
+  // 2. Populate the required data for the profile
+  const [
+    user,
+    isFollowingYou,
+    isFollowedByYou,
+    isConnected
+  ] = await Promise.all([
+    User.findById(userId),
+    Follow.findOne({ userId, isFollowing: req.userId }),
+    Follow.findOne({ userId: req.userId, isFollowing: userId }),
+    Connection.findOne({ userId: req.userId, connectionId: userId })
+  ])
+  res.status(200).json({
+    status: true,
+    message: `${user.personalInfo.firstName} ${user.personalInfo.lastName} Profile`,
+    data: {
+      user,
+      isFollowingYou: Boolean(isFollowingYou),
+      isFollowedByYou: Boolean(isFollowedByYou),
+      connectionStatus: isConnected ? isConnected.connectionStatus : 'null'
+    }
+  })
+})

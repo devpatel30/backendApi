@@ -14,6 +14,7 @@ const authRoutes = require("./routes/auth");
 const resourceRoutes = require("./routes/resource");
 const profileRoutes = require("./routes/profile");
 const mentorshipRoutes = require("./routes/mentorship");
+const connectionRoutes = require("./routes/connection");
 
 app.listen(process.env.PORT, () => {
   console.log(`Listening at port ${process.env.PORT}`);
@@ -64,6 +65,8 @@ app.use("/profile", profileRoutes);
 app.use("/auth", authRoutes);
 app.use("/resource", resourceRoutes);
 app.use("/mentor", mentorshipRoutes);
+app.use("/connection", connectionRoutes);
+
 app.all("*", (req, res, next) => {
   res.status(404).json({ status: false, message: "Page not found" });
 });

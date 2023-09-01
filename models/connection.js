@@ -2,45 +2,39 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 const connectionSchema = new Schema({
-  user_id: {
-    type: String,
-    required: true,
+  userId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'Please provide user id']
   },
-  name: {
-    type: String,
-    required: true,
-  },
-  image: {
-    type: String,
-  },
-  headline: {
-    type: String,
-  },
-  description: {
-    type: String,
-  },
-  universityName: {
-    type: String,
-  },
-  isConnected: {
-    type: Boolean,
-    default: false,
+  connectionId: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'Please provide connection id']
   },
   connectionType: {
-    type: String,
-    enum: ["connection", "network", null],
+    type: Number,
+    enum: [1, 2],
+    required: [true, 'Please provide connection type']
   },
-  mutualConnections: [
-    {
-      type: Schema.Types.ObjectId,
-      ref: "ConnectionResource",
-    },
-  ],
+  relationshipType: {
+    type: Number,
+    min: [1, 'Invalid value, Please provide values between (1, 5) inclusive'],
+    max: [1, 'Invalid value, Please provide values between (1, 5) inclusive'],
+    required: [true, 'Please provide relationship type']
+  },
+  connectionStatus: {
+    type: String,
+    enum: ["pending", "accepted"],
+    default: "pending"
+  }
+}, {
+  timestamps: true
 });
 
-const ConnectionResource = mongoose.model(
-  "ConnectionResource",
+const Connection = mongoose.model(
+  "Connection",
   connectionSchema
 );
 
-module.exports = ConnectionResource;
+module.exports = Connection;
