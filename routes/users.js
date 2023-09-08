@@ -26,7 +26,9 @@ const {
   emailExists,
   logoutUser,
   googleAuth,
-  fetchUserProfile
+  fetchUserProfile,
+  handleSaveUser,
+  reportUser
 } = require("../controllers/userControllers");
 
 require("../config/appAuth");
@@ -109,5 +111,11 @@ router.get(
 
 // User profile
 router.get('/userProfile', isLoggedIn, fetchUserProfile)
+
+// Saving users
+router.post('/handleSaveUser', isLoggedIn, handleSaveUser)
+
+// report user
+router.post('/reportUser', isLoggedIn, reportUser)
 
 module.exports = router;
