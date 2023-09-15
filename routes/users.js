@@ -25,7 +25,10 @@ const {
   getImageLink,
   emailExists,
   logoutUser,
-  googleAuth
+  googleAuth,
+  fetchUserProfile,
+  handleSaveUser,
+  reportUser
 } = require("../controllers/userControllers");
 
 require("../config/appAuth");
@@ -105,4 +108,14 @@ router.get(
   passport.authenticate("jwt", { session: false }),
   catchAsync(getImageLink)
 );
+
+// User profile
+router.get('/userProfile', isLoggedIn, fetchUserProfile)
+
+// Saving users
+router.post('/handleSaveUser', isLoggedIn, handleSaveUser)
+
+// report user
+router.post('/reportUser', isLoggedIn, reportUser)
+
 module.exports = router;

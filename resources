@@ -234,8 +234,8 @@ A – Endpoints*****************************************************************
                 - status 
                 - message 
                 - data : { 
-                    current  =>  List<ConnectionResource> 
-                    past     =>  List<ConnectionResource> 
+                    current  =>  List<Connection> 
+                    past     =>  List<Connection> 
                             } 
  * fetch_all_mentor_mentees (auth - Post) 
         - action : fetch all mentees based on type (current , past) 
@@ -247,7 +247,7 @@ A – Endpoints*****************************************************************
        - output : 
                 - status 
                 - message 
-                - data : List<ConnectionResource> 
+                - data : List<Connection> 
  * update_availability (auth - Post) 
         - action : edit/remove the availability of the logged in user 
         - input : 
@@ -324,7 +324,7 @@ B- Resources
     - thumbnail (MediaResource) 
     - images (List<MediaResource>) 
  
-*ConnectionResource 
+*Connection 
     - id (String) => user_id 
     - name (String) 
     - image (String) 
@@ -338,7 +338,7 @@ B- Resources
   - connectionStatus (String) => 1 - connected , 2 - not connected , 3 - pending , 4 - blocked (future..) 
   - isFollowing (boolean) (future..) 
   - isFollowed (boolean) 
-  - mutualConnections (List <ConnectionResource>)   .....> return 2 at most 
+  - mutualConnections (List <Connection>)   .....> return 2 at most 
   - mutualConnectionsCount (int) 
     
  *GoalResource* 
@@ -402,7 +402,7 @@ WE need to Update the UserResource to meet the new requirements
     - id (String) 
     - date (String) => ex : "April 29" 
     - no_of_empty_slots (int) => ex : 3 
-- ConnectionResource (edit) 
+- Connection (edit) 
     - id (String) => user_id 
     - name (String) 
     - image (String) 
@@ -411,7 +411,7 @@ WE need to Update the UserResource to meet the new requirements
     - universityName (String) 
     - isConnected (bool) 
     - connection_type (String) =>  1 - connection , 2 - network , 3 - null 
-    - mutualConnections (List <ConnectionResource>)   .....> return 2 at most 
+    - mutualConnections (List <Connection>)   .....> return 2 at most 
     -XXXX DELETE THIS =>  no_of_mutual_connections (int) 
  
  
@@ -470,7 +470,7 @@ WE need to Update the UserResource to meet the new requirements
     - output : 
             - status 
             - message 
-            - data : List<ConnectionResource> 
+            - data : List<Connection> 
  
 - fetch_user_profile (auth - Post) 
     - action : fetch user profile info 
@@ -488,7 +488,7 @@ WE need to Update the UserResource to meet the new requirements
     - output : 
             - status 
             - message 
-            - data : List<ConnectionResource> 
+            - data : List<Connection> 
  
  
  
@@ -550,7 +550,7 @@ WE need to Update the UserResource to meet the new requirements
             - output : 
                     - status 
                     - message 
-                    - data :   List<ConnectionResource> 
+                    - data :   List<Connection> 
  
 * fetch_institution_recent_Jobs 
             - action : - fetch the most recent 5 jobs 
@@ -601,9 +601,9 @@ WE need to Update the UserResource to meet the new requirements
  
  
 - InstitutionPeopleResource 
-    - mentors (List<ConnectionResource>) 
-    - alumni (List<ConnectionResource>) 
-    - employees (List<ConnectionResource>) 
+    - mentors (List<Connection>) 
+    - alumni (List<Connection>) 
+    - employees (List<Connection>) 
  
 - JobSimpleResource 
   - id (String) 

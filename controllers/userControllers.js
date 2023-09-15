@@ -22,6 +22,12 @@ const Waitlist = require("../models/waitlist");
 const InvitationCode = require("../models/invitationCode");
 
 const { findAndDeleteTokenByUserId } = require("../middleware/utils");
+const catchAsync = require("../utils/catchAsync");
+const Connection = require("../models/connection")
+const Follow = require("../models/follow")
+const Save = require("../models/Save")
+const ReportReason = require("../models/ReportReason")
+const Report = require("../models/report")
 
 require("../config/appAuth");
 
@@ -560,3 +566,127 @@ module.exports.getImageLink = async (req, res, next) => {
     res.status(500).json({ status: false, message: e.message, error: e });
   }
 };
+
+module.exports.fetchUserProfile = catchAsync(async (req, res, next) => {
+  const { userId } = req.body
+  // 1. Check for required data
+  if (!userId) {
+    return res.status(200).json({
+      status: false,
+      message: 'Please provide required data'
+    })
+  }
+  // 2. Populate the required data for the profile
+  const [
+    user,
+    isFollowingYou,
+    isFollowedByYou,
+    isConnected
+  ] = await Promise.all([
+    User.findById(userId),
+    Follow.findOne({ userId, isFollowing: req.userId }),
+    Follow.findOne({ userId: req.userId, isFollowing: userId }),
+    Connection.findOne({ userId: req.userId, connectionId: userId })
+  ])
+  res.status(200).json({
+    status: true,
+    message: `${user.personalInfo.firstName} ${user.personalInfo.lastName} Profile`,
+    data: {
+      user,
+      isFollowingYou: Boolean(isFollowingYou),
+      isFollowedByYou: Boolean(isFollowedByYou),
+      connectionStatus: isConnected ? isConnected.connectionStatus : 'null'
+    }
+  })
+})
+
+module.exports.handleSaveUser = catchAsync(async (req, res, next) => {
+  const { userId } = req.body
+  // 1. Check for required data
+  if (!userId) {
+    return res.status(200).json({
+      status: false,
+      message: 'Please provide user id'
+    })
+  }
+  // 2. Checking if user saved any users before
+  const saveResource = await Save.findOne({ userId: req.userId })
+  // 3. User has never saved users before
+  if (!saveResource) {
+    await Save.create({
+      userId: req.userId,
+      savedUsers: [userId]
+    })
+    return res.status(200).json({
+      status: true,
+      isSaved: true,
+      message: 'User saved successfully'
+    })
+  }
+  // 4. Checking if user is already saved
+  const isSaved = saveResource.savedUsers.find(s => s?.toString() === userId)
+  let updateParams = {}
+  let responseParams = {}
+  // 5. If user is saved then unsave him
+  if (isSaved) {
+    updateParams = {
+      $pull: { savedUsers: userId }
+    }
+    responseParams = {
+      status: true,
+      isSaved: false,
+      message: 'User is unsaved successfully'
+    }
+  } else { // 6. If user isn't saved then save him
+    updateParams = {
+      $push: { savedUsers: userId }
+    }
+    responseParams = {
+      status: true,
+      isSaved: true,
+      message: 'User is saved successfully'
+    }
+  }
+  await Save.findOneAndUpdate({ userId: req.userId }, updateParams, { runValidators: true })
+  res.status(200).json(responseParams)
+})
+
+module.exports.reportUser = catchAsync(async (req, res, next) => {
+  const { userId, reasonId, message = "" } = req.body
+  // 1. Checking for required data
+  if (!userId || !reasonId) {
+    return res.status(200).json({
+      status: false,
+      message: 'User id and reason id are required'
+    })
+  }
+  // 2. Checking if user and report exists & Checking if report exists
+  const [user, reportReason, report] = await Promise.all([
+    User.findById(userId),
+    ReportReason.findById(reasonId),
+    Report.findOne({ userId: req.userId, reportedUser: userId })
+  ])
+  if (!user || !reportReason) {
+    return res.status(200).json({
+      status: false,
+      message: 'Invalid user id or reason id'
+    })
+  }
+  if (report) {
+    return res.status(200).json({
+      status: false,
+      message: 'Report already exists'
+    })
+  }
+  // 3. Create report
+  await Report.create({
+    userId: req.userId,
+    reportedUser: userId,
+    reasonId,
+    message
+  })
+  res.status(200).json({
+    status: true,
+    message: 'Report created successfully'
+  })
+})
