@@ -16,7 +16,6 @@ const profileRoutes = require("./routes/profile");
 const mentorshipRoutes = require("./routes/mentorship");
 const connectionRoutes = require("./routes/connection");
 const institutionRoutes = require("./routes/institution");
-const Job = require("./models/job")
 
 app.listen(process.env.PORT, () => {
   console.log(`Listening at port ${process.env.PORT}`);
