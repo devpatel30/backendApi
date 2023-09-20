@@ -735,6 +735,8 @@ module.exports.becomeMentor = catchAsync(async (req, res, next) => {
       data: user
     })
   } else {
+    updateObj["mentor.isMentorVerified"] = false
+    updateObj["mentor.mentorshipInstitution"] = institutionId
     const user = await User.findByIdAndUpdate(req.userId, updateObj, { new: true })
     res.status(200).json({
       status: true,
