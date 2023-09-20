@@ -28,7 +28,8 @@ const {
   googleAuth,
   fetchUserProfile,
   handleSaveUser,
-  reportUser
+  reportUser,
+  becomeMentor
 } = require("../controllers/userControllers");
 
 require("../config/appAuth");
@@ -117,5 +118,8 @@ router.post('/handleSaveUser', isLoggedIn, handleSaveUser)
 
 // report user
 router.post('/reportUser', isLoggedIn, reportUser)
+
+// Apply to become a mentor
+router.post("/become-a-mentor", isLoggedIn, becomeMentor)
 
 module.exports = router;

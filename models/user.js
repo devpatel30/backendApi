@@ -140,16 +140,13 @@ const userSchema = new Schema({
         "selfEmployed",
       ],
     },
-
     mentorTimeDuration: {
       type: Number,
     },
-    currentMentees: {
-      type: Number,
-    },
-    // required: function () {
-    //   return this.userType === "mentor";
-    // },
+    isMentorVerified: {
+      type: Boolean,
+      default: false
+    }
   },
   institution: {
     creatorInfo: {
