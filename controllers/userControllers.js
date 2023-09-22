@@ -20,8 +20,6 @@ const { User, Token } = require("../models");
 // const User = require("../models/user");
 const Waitlist = require("../models/waitlist");
 const InvitationCode = require("../models/invitationCode");
-const Experience = require("../models/experience")
-const mentorShipStyle = require("../models/mentorshipStyle")
 
 const { findAndDeleteTokenByUserId } = require("../middleware/utils");
 const catchAsync = require("../utils/catchAsync");
@@ -87,6 +85,8 @@ const saveTokenToDb = async (accessToken, userId) => {
     throw error;
   }
 };
+
+module.exports.generateJWT = generateJWT
 
 // signup
 module.exports.signUpUser = async (req, res, next) => {
@@ -691,57 +691,4 @@ module.exports.reportUser = catchAsync(async (req, res, next) => {
     status: true,
     message: 'Report created successfully'
   })
-})
-
-module.exports.becomeMentor = catchAsync(async (req, res, next) => {
-  const { jobTitleId, 
-    companyId, 
-    employmentType, 
-    expertises, 
-    mentorshipStyles, 
-    noOfMentees, 
-    availabilities, 
-    institutionId 
-  } = req.body
-  // 1. Check for valid data
-  if (!jobTitleId || !companyId || !employmentType || !expertises || !mentorshipStyles || !noOfMentees || !availabilities) {
-    return res.status(200).json({
-      status: false,
-      message: "Missing required data"
-    })
-  }
-  // 2. Craete data
-  const [newExpertise, availabs] = await Promise.all([
-    Expertise.create(expertises),
-    Availability.create(availabilities)
-  ])
-  // 3. update user
-  const updateObj = {
-    "personalInfo.userType": "mentor",
-    "mentor.jobTitle": jobTitleId,
-    "mentor.company": companyId,
-    "mentor.employmentType": employmentType,
-    "mentor.noOfMentees": noOfMentees,
-    "mentor.mentorshipStyle": mentorshipStyles,
-    "mentor.availability": availabs.map(a => a._id),
-    "mentor.expertise": newExpertise.map(a => a._id)
-  }
-  if (!institutionId) {
-    updateObj["mentor.isMentorVerified"] = true
-    const user = await User.findByIdAndUpdate(req.userId, updateObj, { new: true })
-    res.status(200).json({
-      status: true,
-      message: "You're all set",
-      data: user
-    })
-  } else {
-    updateObj["mentor.isMentorVerified"] = false
-    updateObj["mentor.mentorshipInstitution"] = institutionId
-    const user = await User.findByIdAndUpdate(req.userId, updateObj, { new: true })
-    res.status(200).json({
-      status: true,
-      message: "Your verification is in progress",
-      data: user
-    })
-  }
 })

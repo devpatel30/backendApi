@@ -6,32 +6,22 @@ const mentorProgramSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "User",
   },
-  menteeId: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
+  description: {
+    type: String,
+    required: [true, 'Please provide program description']
   },
   totalDays: {
     type: Number,
   },
-  remainingDays: {
+  meetingFrequency: {
     type: Number,
+    required: [true, 'Please provide meeting frequency']
   },
-  meeting: {
-    type: Schema.Types.ObjectId,
-    ref: "ScheduleMeeting",
+  meetingDuration: {
+    type: Number,
+    required: [true, 'Please provide meeting duration']
   },
-  isAgreementSigned: {
-    type: Boolean,
-    default: false,
-  },
-  isMentorVerified: {
-    type: Boolean,
-    default: false,
-  },
-  goals: {
-    type: Schema.Types.ObjectId,
-    ref: "ProgramGoal",
-  },
+  goals: [String]
 });
 
 module.exports = new mongoose.model("MentorProgram", mentorProgramSchema);
