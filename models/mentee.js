@@ -1,19 +1,42 @@
 const mongoose = require("mongoose");
-const { Schema } = mongoose;
 
-const menteeSchema = new Schema({
-  menteeId: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
+const menteeSchema = new mongoose.Schema({
+  mentor: {
+    type: mongoose.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'Please provide mentor id']
   },
-  connection: {
-    type: Schema.Types.ObjectId,
-    ref: "Connection",
+  mentee: {
+    type: mongoose.Types.ObjectId,
+    ref: 'User',
+    required: [true, 'Please provide mentee id']
   },
-  application: {
-    type: Schema.Types.ObjectId,
-    ref: "MentorshipApplication",
+  goals: [{
+    target: String,
+    tasks: [{
+      type: mongoose.Types.ObjectId,
+      ref: 'Task'
+    }]
+  }],
+  scheduleMeeting: {
+    day: Date,
+    time: String
   },
+  isAgreementSigned: {
+    type: Boolean,
+    default: false
+  },
+  form: {
+    type: mongoose.Types.ObjectId,
+    ref: 'MenteeApplicationForm',
+    required: [true, 'Please provide mentee application form id']
+  },
+  mentorshipProgram: {
+    type: mongoose.Types.ObjectId,
+    ref: 'MentorProgram'
+  },
+}, {
+  timestamps: true
 });
 
-module.exports = new mongoose.model("Mentee", menteeSchema);
+module.exports = mongoose.model("Mentee", menteeSchema);

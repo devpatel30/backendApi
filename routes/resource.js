@@ -16,7 +16,8 @@ const {
   MentorshipStyle,
   School,
   Skill,
-  ReportReason
+  ReportReason,
+  MenteeRejectionReason
 } = require("../models");
 
 const models = {
@@ -32,7 +33,8 @@ const models = {
   MentorshipStyle,
   School,
   Skill,
-  ReportReason
+  ReportReason,
+  MenteeRejectionReason
 };
 
 // Function to fetch data for a specific model

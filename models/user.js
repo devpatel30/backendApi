@@ -140,16 +140,17 @@ const userSchema = new Schema({
         "selfEmployed",
       ],
     },
-
     mentorTimeDuration: {
       type: Number,
     },
-    currentMentees: {
-      type: Number,
+    isMentorVerified: {
+      type: Boolean,
+      default: false
     },
-    // required: function () {
-    //   return this.userType === "mentor";
-    // },
+    mentorshipInstitution: {
+      type: mongoose.Types.ObjectId,
+      ref: 'User'
+    }
   },
   institution: {
     creatorInfo: {

@@ -86,6 +86,8 @@ const saveTokenToDb = async (accessToken, userId) => {
   }
 };
 
+module.exports.generateJWT = generateJWT
+
 // signup
 module.exports.signUpUser = async (req, res, next) => {
   try {
