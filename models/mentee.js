@@ -15,7 +15,8 @@ const menteeSchema = new mongoose.Schema({
     target: String,
     tasks: [{
       type: mongoose.Types.ObjectId,
-      ref: 'Task'
+      ref: 'Task',
+      default: []
     }]
   }],
   scheduleMeeting: {
@@ -26,15 +27,17 @@ const menteeSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  form: {
-    type: mongoose.Types.ObjectId,
-    ref: 'MenteeApplicationForm',
-    required: [true, 'Please provide mentee application form id']
+  reason: {
+    type: String,
+    required: [true, 'Please provide your reasons to join']
   },
-  mentorshipProgram: {
-    type: mongoose.Types.ObjectId,
-    ref: 'MentorProgram'
-  },
+  expectations: [{
+      type: mongoose.Types.ObjectId,
+      ref: 'MentorshipStyle'
+  }],
+  achievements: [{
+      achievement: String
+  }]
 }, {
   timestamps: true
 });

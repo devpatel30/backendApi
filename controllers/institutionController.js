@@ -62,12 +62,14 @@ module.exports.fetchInstitutionRecentPeople = catchAsync(async (req, res, next) 
         { "$match": { "institutionId": new mongoose.Types.ObjectId(institutionId) } },
         { "$unwind": "$members" },
         { "$sort": { "members.createdAt": -1 } },
-        { "$limit": 5 },
         { "$group": {
-          "_id": "$_id",
-          "members": { "$push": "$members" }
-        }}
+            "_id": "$members.memberType",
+            "memberType": { $first: "$members.memberType" },
+            "members": { "$push": "$members" }
+        }},
+        { "$project": { _id: 0 } }
     ])
+
     await InstitutionPeople.populate(members, { path: "members.userId" })
     res.status(200).json({
         status: true,
@@ -99,6 +101,6 @@ module.exports.fetchInstitutionMembers = catchAsync(async (req, res, next) => {
     res.status(200).json({
         status: true,
         message: "Institution members",
-        data: members
+        data: members[0].members
     })
 })

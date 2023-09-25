@@ -6,7 +6,9 @@ const menteeApplicationFormSchema = new mongoose.Schema({
         ref: 'User',
         required: [true, 'Please provide mentee id']
     },
-    goals: [String],
+    goals: [{
+        target: String
+    }],
     reason: {
         type: String,
         required: [true, 'Please provide your reasons to join']
@@ -15,7 +17,9 @@ const menteeApplicationFormSchema = new mongoose.Schema({
         type: mongoose.Types.ObjectId,
         ref: 'MentorshipStyle'
     }],
-    achievements: [String]
+    achievements: [{
+        achievement: String
+    }]
 }, {
     timestamps: true
 })
