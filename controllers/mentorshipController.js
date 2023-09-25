@@ -1,4 +1,5 @@
 
+const { Types } = require("mongoose")
 const catchAsync = require("../utils/catchAsync");
 const Expertise = require("../models/expertise")
 const Availability = require("../models/availability")
@@ -89,12 +90,12 @@ module.exports.createApplicationForm = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: true,
     message: "Form created successfully",
-    data: { form }
+    data: form
   })
 })
 
 module.exports.fetchApplicationForms = catchAsync(async (req, res, next) => {
-  const forms = await MenteeApplicationForm.find({ mentee: req.userId })
+  const forms = await MenteeApplicationForm.find({ mentee: req.userId }).populate("expectations")
   res.status(200).json({
     status: true,
     message: "Mentee Application forms",
@@ -135,7 +136,15 @@ module.exports.applyToBeMentorsMentee = catchAsync(async (req, res, next) => {
       message: 'You already applyed!!'
     })
   }
-  // 3. Create Application
+  // 3. Check if user is already under mentor's mentorship
+  const isMenteeExists = await Mentee.findOne({ mentor: mentorId, mentee: req.userId })
+  if (isMenteeExists) {
+    return res.status(200).json({
+      status: false,
+      message: "You are already under this mentor's mentorship"
+    })
+  }
+  // 4. Create Application
   await ApplicationRequest.create({
     mentor: mentorId,
     mentee: req.userId,
@@ -148,13 +157,67 @@ module.exports.applyToBeMentorsMentee = catchAsync(async (req, res, next) => {
 })
 
 module.exports.fetchMentees = catchAsync(async (req, res, next) => {
-  
+  const [applicants, mentees] = await Promise.all([
+    ApplicationRequest.find({ mentor: req.userId, applicationStatus: "pending" }).populate(["mentee", "form"]),
+    Mentee.find({ mentor: req.userId }).populate("mentee")
+  ])
+  res.status(200).json({
+    status: true,
+    message: "Mentor's mentees and applicants",
+    data: { mentees, applicants }
+  })
 })
 
 module.exports.acceptApplicationRequest = catchAsync(async (req, res, next) => {
-  
+  const { applicationId } = req.body
+  // 1. check if application exists
+  const isApplicationExists = await ApplicationRequest.findOne({ _id: applicationId, mentor: req.userId }).populate("form")
+  if (!isApplicationExists) {
+    return res.status(200).json({
+      status: false,
+      message: "Application not found!"
+    })
+  }
+  // 2. Create a document in Mentee model for this applicant and delete application request
+  const menteeObj = {
+    mentor: req.userId,
+    mentee: isApplicationExists.mentee,
+    goals: isApplicationExists.form.goals.map(x => { return { target: x.target } }),
+    reason: isApplicationExists.form.reason,
+    expectations: isApplicationExists.form.expectations,
+    achievements: isApplicationExists.form.achievements.map(x => { return { achievement: x.achievement } })
+  }
+  const [mentee, _] = await Promise.all([
+    Mentee.create(menteeObj),
+    ApplicationRequest.findByIdAndDelete(applicationId)
+  ])
+  res.status(200).json({
+    status: true,
+    message: "Mentee is Accepted successfuly"
+  })
 })
 
 module.exports.rejectApplicationRequest = catchAsync(async (req, res, next) => {
+  const { applicationId, rejectionReason, rejectionExplanation } = req.body
+  // 1. Check if application exists
+  const isApplicationExists = await ApplicationRequest.findOne({ _id: applicationId, mentor: req.userId }).populate("form")
+  if (!isApplicationExists) {
+    return res.status(200).json({
+      status: false,
+      message: "Application not found!"
+    })
+  }
+  // 2. update application request
+  isApplicationExists.applicationStatus = "rejected"
+  if (rejectionReason) {
+    isApplicationExists.rejectionReason = rejectionReason
+  } else if (rejectionExplanation) {
+    isApplicationExists.rejectionExplanation = rejectionExplanation
+  }
+  await isApplicationExists.save()
 
+  res.status(200).json({
+    status: true,
+    message: "Mentee is rejected successfully"
+  })
 })

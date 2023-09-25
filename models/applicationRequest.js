@@ -16,15 +16,16 @@ const applicationRequestSchema = new mongoose.Schema({
         enum: ["pending", "accepted", "rejected"],
         default: "pending"
     },
-    rejectionReason: {
-        type: mongoose.Types.ObjectId,
-        ref: 'MenteeRejectionReason'
-    },
     form: {
         type: mongoose.Types.ObjectId,
         ref: 'MenteeApplicationForm',
         required: [true, 'Please provide form id']
-    }
+    },
+    rejectionReason: {
+        type: mongoose.Types.ObjectId,
+        ref: 'MenteeRejectionReason'
+    },
+    rejectionExplanation: String
 }, {
     timestamps: true
 })
