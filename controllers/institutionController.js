@@ -24,7 +24,7 @@ module.exports.fetchInstitutionRecentJobs = catchAsync(async (req, res, next) =>
 })
 
 module.exports.fetchInstitutionAllJobs = catchAsync(async (req, res, next) => {
-    const { institutionId } = req.body
+    const { institutionId, title } = req.body
     // 1. Check for required data
     if (!institutionId) {
         return res.status(200).json({
@@ -36,14 +36,13 @@ module.exports.fetchInstitutionAllJobs = catchAsync(async (req, res, next) => {
     let searchObj = {
         institution: institutionId
     }
-    if (req.query.title) {
-        searchObj.title = req.query.title.toLowerCase()
+    if (title) {
+        searchObj.title = title.toLowerCase()
     }
     const jobs = await Job.find(searchObj).sort({ 'updatedAt': -1 }).select(jobSimpleSelection)
     res.status(200).json({
         status: true, 
         message: 'Institution jobs',
-        count: jobs?.length || 0,
         data: jobs || []
     })
 })
@@ -67,7 +66,7 @@ module.exports.fetchInstitutionRecentPeople = catchAsync(async (req, res, next) 
             "memberType": { $first: "$members.memberType" },
             "members": { "$push": "$members" }
         }},
-        { "$project": { _id: 0 } }
+        { "$project": { _id: 0, "memberType": 1 ,"members": { "$slice": ["$members", 5] } } }
     ])
 
     await InstitutionPeople.populate(members, { path: "members.userId" })
@@ -81,13 +80,22 @@ module.exports.fetchInstitutionRecentPeople = catchAsync(async (req, res, next) 
 module.exports.fetchInstitutionMembers = catchAsync(async (req, res, next) => {
     const { institutionId, type } = req.body
     // 1. Check for required Data
-    if (!institutionId || !type) {
+    if (!institutionId) {
         return res.status(200).json({
             status: false,
             message: "Please provide required data"
         })
     }
-    // 2. Fetch Institution members
+    // 2. Send all members if there is no type
+    if (!type) {
+        const members = await InstitutionPeople.findOne({ institutionId }).populate("members.userId")
+        return res.status(200).json({
+            status: true,
+            message: "Institution members",
+            data: members.members
+        })
+    }
+    // 3. Fetch Institution members based on type
     const members = await InstitutionPeople.aggregate([
         { "$match": { "institutionId": new mongoose.Types.ObjectId(institutionId) } },
         { "$unwind": "$members" },

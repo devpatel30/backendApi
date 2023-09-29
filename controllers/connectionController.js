@@ -1,4 +1,5 @@
 const Connection = require("../models/connection")
+const ConnectionRequest = require("../models/connectionRequest")
 const Follow = require("../models/follow")
 const catchAsync = require("../utils/catchAsync")
 const { fetchMutualConnections } = require("../utils/mutualConnections")
@@ -42,7 +43,7 @@ module.exports.sendConnectionRequest = catchAsync(async (req, res, next) => {
         })
     }
     // 2. Check if connection already exists
-    const isConnectionExists = await Connection.findOne({ userId: req.userId, connectionId: userId })
+    const isConnectionExists = await ConnectionRequest.findOne({ userId: req.userId, connectionId: userId })
     if (isConnectionExists) {
         return res.status(200).json({
             status: false,
@@ -50,7 +51,7 @@ module.exports.sendConnectionRequest = catchAsync(async (req, res, next) => {
         })
     }
     // 3. Create Connection request
-    await Connection.create({ userId: req.userId, connectionId: userId, relationshipType, connectionType })
+    await ConnectionRequest.create({ userId: req.userId, connectionId: userId, relationshipType, connectionType })
     res.status(200).json({
         status: true,
         message: 'Connection request sent successfully'
@@ -67,7 +68,7 @@ module.exports.withdrawConnection = catchAsync(async (req, res, next) => {
         })
     }
     // 2. Check if connection doesn't exist
-    const isConnectionExists = await Connection.findOne({ userId: req.userId, connectionId: userId })
+    const isConnectionExists = await ConnectionRequest.findOne({ userId: req.userId, connectionId: userId })
     if (!isConnectionExists) {
         return res.status(200).json({
             status: false,
@@ -75,7 +76,7 @@ module.exports.withdrawConnection = catchAsync(async (req, res, next) => {
         })
     }
     // 3. Delete the Connection from DB
-    await Connection.findOneAndDelete({ userId: req.userId, connectionId: userId })
+    await ConnectionRequest.findOneAndDelete({ userId: req.userId, connectionId: userId })
     res.status(200).json({
         status: true,
         message: 'Connection removed successfully'

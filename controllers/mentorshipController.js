@@ -7,6 +7,8 @@ const MenteeApplicationForm = require("../models/menteeApplicationForm")
 const ApplicationRequest = require("../models/applicationRequest")
 const Mentee = require("../models/mentee")
 const User = require("../models/user")
+const InstitutionVerificationRequest = require("../models/institutionVerificationRequest")
+const InstitutionPeople = require("../models/InstitutionPeople")
 const { generateJWT } = require("./userControllers")
 
 module.exports.becomeMentor = catchAsync(async (req, res, next) => {
@@ -17,7 +19,9 @@ module.exports.becomeMentor = catchAsync(async (req, res, next) => {
       mentorshipStyles, 
       noOfMentees, 
       availabilities, 
-      institutionId 
+      institutionId,
+      schoolEmail,
+      schoolId
     } = req.body
     // 1. Check for valid data
     if (!jobTitleId || !companyId || !employmentType || !expertises || !mentorshipStyles || !noOfMentees || !availabilities) {
@@ -26,7 +30,7 @@ module.exports.becomeMentor = catchAsync(async (req, res, next) => {
         message: "Missing required data"
       })
     }
-    // 2. Craete data
+    // 2. Create data
     const [newExpertise, availabs] = await Promise.all([
       Expertise.create(expertises),
       Availability.create(availabilities)
@@ -42,26 +46,78 @@ module.exports.becomeMentor = catchAsync(async (req, res, next) => {
       "mentor.availability": availabs.map(a => a._id),
       "mentor.expertise": newExpertise.map(a => a._id)
     }
-    if (!institutionId) {
-      updateObj["mentor.isMentorVerified"] = true
-      const user = await User.findByIdAndUpdate(req.userId, updateObj, { new: true })
-      const token = generateJWT(user)
-      res.status(200).json({
-        status: true,
-        message: "You're all set",
-        data: { ...user, token: "Bearer " + token }
-      })
-    } else {
-      updateObj["mentor.isMentorVerified"] = false
-      updateObj["mentor.mentorshipInstitution"] = institutionId
-      const user = await User.findByIdAndUpdate(req.userId, updateObj, { new: true })
-      const token = generateJWT(user)
-      res.status(200).json({
+    const user = await User.findByIdAndUpdate(req.userId, updateObj, { new: true })
+    const token = generateJWT(user)
+    // 4. Check for verification
+    if (institutionId) {
+      const isRequestExists = await InstitutionVerificationRequest.findOne({ institutionId, userId: req.userId })
+      if (isRequestExists) {
+        return res.status(200).json({
+          status: false,
+          message: "Request was already sent"
+        })
+      }
+      await InstitutionVerificationRequest.create({ institutionId, userId: req.userId, schoolEmail: schoolEmail || null, schoolId: schoolId || null })
+      return res.status(200).json({
         status: true,
         message: "Your verification is in progress",
-        data: { ...user, token: "Bearer " + token }
+        data: { token: "Bearer " + token, user }
       })
     }
+    res.status(200).json({
+      status: true,
+      message: "You're all set",
+      data: { token: "Bearer " + token, user }
+    })
+})
+
+module.exports.verifyMentor = catchAsync(async (req, res, next) => {
+  const { requestId, status } = req.body
+  // 1. Check if request exists
+  const isRequestExists = await InstitutionVerificationRequest.findById(requestId)
+  if (!isRequestExists) {
+    return res.status(200).json({
+      status: false,
+      message: "Request not found!"
+    })
+  }
+  if (isRequestExists.institutionId.toString() !== req.userId.toString()) {
+    return res.status(200).json({
+      status: false,
+      message: "Unauthorized"
+    })
+  }
+  // 2. Accept mentor to institution
+  if (status === "accept") {
+    const institutionMembers = await InstitutionPeople.findOne({ institutionId: isRequestExists.institutionId })
+    if (!institutionMembers) {
+      await InstitutionPeople.create({ 
+        institutionId: isRequestExists.institutionId, 
+        members: [{
+          userId: isRequestExists.userId,
+          memberType: "mentor"
+      }]})
+    } else {
+      institutionMembers.members.push({
+        userId: isRequestExists.userId,
+        memberType: "mentor"
+      })
+      await institutionMembers.save()
+    }
+    await InstitutionVerificationRequest.findByIdAndDelete(requestId)
+    res.status(200).json({
+      status: true,
+      message: "Mentor is accepted successfully"
+    })
+  }
+  // 3. Reject mentor request
+  if (status === "reject") {
+    await InstitutionVerificationRequest.findByIdAndDelete(requestId)
+    res.status(200).json({
+      status: true,
+      message: "Mentor is rejected successfully"
+    })
+  }
 })
 
 module.exports.createApplicationForm = catchAsync(async (req, res, next) => {
@@ -87,6 +143,7 @@ module.exports.createApplicationForm = catchAsync(async (req, res, next) => {
   const form = await MenteeApplicationForm.create({
     goals, reason, expectations, achievements, mentee: req.userId
   })
+  await MenteeApplicationForm.populate(form, "expectations")
   res.status(200).json({
     status: true,
     message: "Form created successfully",

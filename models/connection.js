@@ -7,27 +7,23 @@ const connectionSchema = new Schema({
     ref: 'User',
     required: [true, 'Please provide user id']
   },
-  connectionId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'Please provide connection id']
-  },
-  connectionType: {
-    type: Number,
-    enum: [1, 2],
-    required: [true, 'Please provide connection type']
-  },
-  relationshipType: {
-    type: Number,
-    min: [1, 'Invalid value, Please provide values between (1, 5) inclusive'],
-    max: [1, 'Invalid value, Please provide values between (1, 5) inclusive'],
-    required: [true, 'Please provide relationship type']
-  },
-  connectionStatus: {
-    type: String,
-    enum: ["pending", "accepted"],
-    default: "pending"
-  }
+  connections: [{
+    connectionId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Please provide connection id']
+    },
+    connectionType: {
+      type: String,
+      enum: ["connection", "network"],
+      required: [true, 'Please provide connection type']
+    },
+    relationshipType: {
+      type: String,
+      enum: ["friend", "classmate", "workmate", "through MiNextStep", "other"],
+      required: [true, 'Please provide relationship type']
+    }
+  }]
 }, {
   timestamps: true
 });
