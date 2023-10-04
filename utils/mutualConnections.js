@@ -8,11 +8,17 @@ module.exports.fetchMutualConnections = async (loggedInUserId, userId) => {
         new mongoose.Types.ObjectId(userId)
     ]
     let connections = await Connection.aggregate([
-        { $match: { connectionStatus: 'accepted' } },
-        { $group: { _id: "$connectionId", users: { $push: "$userId" } } },
-        { $match: { users: { $all: compare } } },
-        { $project: { connectionId: '$_id' } }
+        { $match: { "connections.connectionId": { $all: compare } } },
+        { $unwind: "$connections" },
+        { $match: { "connections.connectionId": new mongoose.Types.ObjectId(loggedInUserId) } },
+        { $group: { 
+            _id: "$userId",
+            "userId": { $first: "$userId" },
+            "connectionType": { $first: "$connections.connectionType" },
+            "relationshipType": { $first: "$connections.relationshipType" }
+        } },
+        { $project: { _id: 0 } }
     ])
-    await Connection.populate(connections, { path: 'connectionId' })
-    return connections.map(x => x['connectionId'])
+    await Connection.populate(connections, { path: 'userId' })
+    return connections
 }

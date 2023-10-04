@@ -588,11 +588,11 @@ module.exports.fetchUserProfile = catchAsync(async (req, res, next) => {
     User.findById(userId),
     Follow.findOne({ userId, isFollowing: req.userId }),
     Follow.findOne({ userId: req.userId, isFollowing: userId }),
-    Connection.findOne({ userId: req.userId, connectionId: userId })
+    Connection.findOne({ userId: req.userId, connectionId: userId }) // update it --------------------------
   ])
   res.status(200).json({
     status: true,
-    message: `${user.personalInfo.firstName} ${user.personalInfo.lastName} Profile`,
+    message: `User's Profile`,
     data: {
       user,
       isFollowingYou: Boolean(isFollowingYou),

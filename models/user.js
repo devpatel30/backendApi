@@ -142,14 +142,6 @@ const userSchema = new Schema({
     },
     mentorTimeDuration: {
       type: Number,
-    },
-    isMentorVerified: {
-      type: Boolean,
-      default: false
-    },
-    mentorshipInstitution: {
-      type: mongoose.Types.ObjectId,
-      ref: 'User'
     }
   },
   institution: {

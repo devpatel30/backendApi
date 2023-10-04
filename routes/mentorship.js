@@ -9,13 +9,17 @@ const {
   applyToBeMentorsMentee,
   acceptApplicationRequest,
   rejectApplicationRequest,
-  topMatch,
-} = require("../controllers/mentorshipController");
+  verifyMentor,
+  topMatch
+} = require("../controllers/mentorshipController")
 
 router.post("/top-matches", isLoggedIn, topMatch);
 
 // Apply to become a mentor
 router.post("/become-a-mentor", isLoggedIn, becomeMentor);
+
+// Mentor verification from institution
+router.post("/verify-mentor", isLoggedIn, verifyMentor)
 
 // Create mentorship application form
 router
