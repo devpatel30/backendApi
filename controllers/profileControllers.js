@@ -167,6 +167,25 @@ module.exports.customKeys = [
   //   { key: "institution-institution", routePath: "remove-institution" },
 ];
 
+// upload to images and saves media and then fill array with media Ids
+const mediaHandler = async (mediaType, mediaIds) => {
+  if (Array.isArray(mediaType) && mediaType.length > 0) {
+    for (const mediaObj of mediaType) {
+      const media = new Media();
+      await media.save();
+      const img = await uploadImageToS3(
+        Media,
+        media._id,
+        mediaObj.buffer,
+        mediaObj.mimeType,
+        "field",
+        "url"
+      );
+      mediaIds.push(media._id);
+    }
+  }
+};
+
 module.exports.addPortfolio = async (req, res, next) => {
   const { title, description, link } = req.body;
   const thumbnail = req.files["thumbnail"];
@@ -178,25 +197,6 @@ module.exports.addPortfolio = async (req, res, next) => {
 
   const imagesIds = [];
   const imagesData = imageFiles;
-
-  // upload to images and saves media and then fill array with media Ids
-  const mediaHandler = async (mediaType, mediaIds) => {
-    if (Array.isArray(mediaType) && mediaType.length > 0) {
-      for (const mediaObj of mediaType) {
-        const media = new Media();
-        await media.save();
-        const img = await uploadImageToS3(
-          Media,
-          media._id,
-          mediaObj.buffer,
-          mediaObj.mimeType,
-          "field",
-          "url"
-        );
-        mediaIds.push(media._id);
-      }
-    }
-  };
 
   await mediaHandler(thumbnailData, thumbnailIds);
   await mediaHandler(imagesData, imagesIds);
@@ -231,66 +231,50 @@ module.exports.editPortfolio = async (req, res, next) => {
   const imagesIds = [];
   const imagesData = imageFiles;
 
-  // upload to images and saves media and then fill array with media Ids
-  const mediaHandler = async (mediaType, mediaIds) => {
-    if (Array.isArray(mediaType) && mediaType.length > 0) {
-      for (const mediaObj of mediaType) {
-        const media = new Media();
-        await media.save();
-        const img = await uploadImageToS3(
-          Media,
-          media._id,
-          mediaObj.buffer,
-          mediaObj.mimeType,
-          "field",
-          "url"
-        );
-        mediaIds.push(media._id);
-      }
-    }
-  };
   if (thumbnail !== undefined) {
     await mediaHandler(thumbnailData, thumbnailIds);
   }
   if (imageFiles !== undefined) {
     await mediaHandler(imagesData, imagesIds);
   }
-  const updateObj = {
-    name: title,
-    description: description,
-    link: link,
-    thumbnail: thumbnailIds,
-    images: imagesIds,
-  };
+  // Initialize an empty updateObj
+  const updateObj = {};
 
-  // Find and update the portfolio by ID
-  try {
-    const portfolio = await Portfolio.findByIdAndUpdate(id, {
-      $set: {
-        updateObj,
-      },
-    });
+  // Conditionally add properties to updateObj if they are not empty
+  if (title) {
+    updateObj.name = title;
+  }
+  if (description) {
+    updateObj.description = description;
+  }
+  if (link) {
+    updateObj.link = link;
+  }
+  if (thumbnailIds.length > 0) {
+    updateObj.thumbnail = thumbnailIds;
+  }
 
-    if (!portfolio) {
-      return res.status(404).json({
-        status: false,
-        message: "Portfolio not found",
-        data: null,
-      });
-    }
+  if (imagesIds.length > 0) {
+    updateObj.images = imagesIds;
+  }
 
-    return res.status(200).json({
-      status: true,
-      message: "Successfully edited portfolio",
-      data: portfolio,
-    });
-  } catch (e) {
-    return res.status(500).json({
+  const portfolio = await Portfolio.findOne({ _id: id, createdBy: req.userId });
+  portfolio.set(updateObj);
+  portfolio.save();
+
+  if (!portfolio) {
+    return res.status(404).json({
       status: false,
-      message: e.message,
-      error: e,
+      message: "Portfolio not found",
+      data: null,
     });
   }
+
+  return res.status(200).json({
+    status: true,
+    message: "Successfully edited portfolio",
+    data: portfolio,
+  });
 };
 
 module.exports.fetchRecentPortfolios = async (req, res, next) => {

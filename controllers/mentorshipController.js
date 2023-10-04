@@ -1,123 +1,149 @@
 const { Types } = require("mongoose");
 const catchAsync = require("../utils/catchAsync");
-const Expertise = require("../models/expertise")
-const Availability = require("../models/availability")
-const MenteeApplicationForm = require("../models/menteeApplicationForm")
-const ApplicationRequest = require("../models/applicationRequest")
-const Mentee = require("../models/mentee")
-const User = require("../models/user")
-const InstitutionVerificationRequest = require("../models/institutionVerificationRequest")
-const InstitutionPeople = require("../models/InstitutionPeople")
-const { generateJWT } = require("./userControllers")
+const Expertise = require("../models/expertise");
+const Availability = require("../models/availability");
+const MenteeApplicationForm = require("../models/menteeApplicationForm");
+const ApplicationRequest = require("../models/applicationRequest");
+const Mentee = require("../models/mentee");
+const User = require("../models/user");
+const InstitutionVerificationRequest = require("../models/institutionVerificationRequest");
+const InstitutionPeople = require("../models/InstitutionPeople");
+const { generateJWT } = require("./userControllers");
 
 module.exports.becomeMentor = catchAsync(async (req, res, next) => {
-    const { jobTitleId, 
-      companyId, 
-      employmentType, 
-      expertises, 
-      mentorshipStyles, 
-      noOfMentees, 
-      availabilities, 
+  const {
+    jobTitleId,
+    companyId,
+    employmentType,
+    expertises,
+    mentorshipStyles,
+    noOfMentees,
+    availabilities,
+    institutionId,
+    schoolEmail,
+    schoolId,
+  } = req.body;
+  // 1. Check for valid data
+  if (
+    !jobTitleId ||
+    !companyId ||
+    !employmentType ||
+    !expertises ||
+    !mentorshipStyles ||
+    !noOfMentees ||
+    !availabilities
+  ) {
+    return res.status(200).json({
+      status: false,
+      message: "Missing required data",
+    });
+  }
+  // 2. Create data
+  const [newExpertise, availabs] = await Promise.all([
+    Expertise.create(expertises),
+    Availability.create(availabilities),
+  ]);
+  // 3. update user
+  const updateObj = {
+    "personalInfo.userType": "mentor",
+    "mentor.jobTitle": jobTitleId,
+    "mentor.company": companyId,
+    "mentor.employmentType": employmentType,
+    "mentor.noOfMentees": noOfMentees,
+    "mentor.mentorshipStyle": mentorshipStyles,
+    "mentor.availability": availabs.map((a) => a._id),
+    "mentor.expertise": newExpertise.map((a) => a._id),
+  };
+  const user = await User.findByIdAndUpdate(req.userId, updateObj, {
+    new: true,
+  });
+  const token = generateJWT(user);
+  // 4. Check for verification
+  if (institutionId) {
+    const isRequestExists = await InstitutionVerificationRequest.findOne({
       institutionId,
-      schoolEmail,
-      schoolId
-    } = req.body
-    // 1. Check for valid data
-    if (!jobTitleId || !companyId || !employmentType || !expertises || !mentorshipStyles || !noOfMentees || !availabilities) {
+      userId: req.userId,
+    });
+    if (isRequestExists) {
       return res.status(200).json({
         status: false,
-        message: "Missing required data"
-      })
+        message: "Request was already sent",
+      });
     }
-    // 2. Create data
-    const [newExpertise, availabs] = await Promise.all([
-      Expertise.create(expertises),
-      Availability.create(availabilities)
-    ])
-    // 3. update user
-    const updateObj = {
-      "personalInfo.userType": "mentor",
-      "mentor.jobTitle": jobTitleId,
-      "mentor.company": companyId,
-      "mentor.employmentType": employmentType,
-      "mentor.noOfMentees": noOfMentees,
-      "mentor.mentorshipStyle": mentorshipStyles,
-      "mentor.availability": availabs.map(a => a._id),
-      "mentor.expertise": newExpertise.map(a => a._id)
-    }
-    const user = await User.findByIdAndUpdate(req.userId, updateObj, { new: true })
-    const token = generateJWT(user)
-    // 4. Check for verification
-    if (institutionId) {
-      const isRequestExists = await InstitutionVerificationRequest.findOne({ institutionId, userId: req.userId })
-      if (isRequestExists) {
-        return res.status(200).json({
-          status: false,
-          message: "Request was already sent"
-        })
-      }
-      await InstitutionVerificationRequest.create({ institutionId, userId: req.userId, schoolEmail: schoolEmail || null, schoolId: schoolId || null })
-      return res.status(200).json({
-        status: true,
-        message: "Your verification is in progress",
-        data: { token: "Bearer " + token, user }
-      })
-    }
-    res.status(200).json({
+    await InstitutionVerificationRequest.create({
+      institutionId,
+      userId: req.userId,
+      schoolEmail: schoolEmail || null,
+      schoolId: schoolId || null,
+    });
+    return res.status(200).json({
       status: true,
-      message: "You're all set",
-      data: { token: "Bearer " + token, user }
-    })
-})
+      message: "Your verification is in progress",
+      data: { token: "Bearer " + token, user },
+    });
+  }
+  res.status(200).json({
+    status: true,
+    message: "You're all set",
+    data: { token: "Bearer " + token, user },
+  });
+});
 
 module.exports.verifyMentor = catchAsync(async (req, res, next) => {
-  const { requestId, status } = req.body
+  const { requestId, status } = req.body;
   // 1. Check if request exists
-  const isRequestExists = await InstitutionVerificationRequest.findById(requestId)
+  const isRequestExists = await InstitutionVerificationRequest.findById(
+    requestId
+  );
   if (!isRequestExists) {
     return res.status(200).json({
       status: false,
-      message: "Request not found!"
-    })
+      message: "Request not found!",
+    });
   }
   if (isRequestExists.institutionId.toString() !== req.userId.toString()) {
     return res.status(200).json({
       status: false,
-      message: "Unauthorized"
-    })
+      message: "Unauthorized",
+    });
   }
   // 2. Accept mentor to institution
   if (status === "accept") {
-    const institutionMembers = await InstitutionPeople.findOne({ institutionId: isRequestExists.institutionId })
+    const institutionMembers = await InstitutionPeople.findOne({
+      institutionId: isRequestExists.institutionId,
+    });
     if (!institutionMembers) {
-      await InstitutionPeople.create({ 
-        institutionId: isRequestExists.institutionId, 
-        members: [{
-          userId: isRequestExists.userId,
-          memberType: "mentor"
-      }]})
+      await InstitutionPeople.create({
+        institutionId: isRequestExists.institutionId,
+        members: [
+          {
+            userId: isRequestExists.userId,
+            memberType: "mentor",
+          },
+        ],
+      });
     } else {
       institutionMembers.members.push({
         userId: isRequestExists.userId,
-        memberType: "mentor"
-      })
-      await institutionMembers.save()
+        memberType: "mentor",
+      });
+      await institutionMembers.save();
     }
-    await InstitutionVerificationRequest.findByIdAndDelete(requestId)
+    await InstitutionVerificationRequest.findByIdAndDelete(requestId);
     res.status(200).json({
       status: true,
-      message: "Mentor is accepted successfully"
-    })
+      message: "Mentor is accepted successfully",
+    });
   }
   // 3. Reject mentor request
   if (status === "reject") {
-    await InstitutionVerificationRequest.findByIdAndDelete(requestId)
+    await InstitutionVerificationRequest.findByIdAndDelete(requestId);
     res.status(200).json({
       status: true,
-      message: "Mentor is rejected successfully"
-    })
+      message: "Mentor is rejected successfully",
+    });
   }
-})
+});
 
 module.exports.createApplicationForm = catchAsync(async (req, res, next) => {
   const { goals, reason, expectations, achievements } = req.body;
@@ -144,9 +170,13 @@ module.exports.createApplicationForm = catchAsync(async (req, res, next) => {
   }
   // 3. Create the form
   const form = await MenteeApplicationForm.create({
-    goals, reason, expectations, achievements, mentee: req.userId
-  })
-  await MenteeApplicationForm.populate(form, "expectations")
+    goals,
+    reason,
+    expectations,
+    achievements,
+    mentee: req.userId,
+  });
+  await MenteeApplicationForm.populate(form, "expectations");
   res.status(200).json({
     status: true,
     message: "Form created successfully",
@@ -386,4 +416,36 @@ module.exports.topMatch = catchAsync(async (req, res, next) => {
       message: "An error occurred while finding top mentor matches.",
     });
   }
+});
+
+module.exports.getPublicMentor = catchAsync(async (req, res, next) => {
+  const userId = req.userId;
+  const user = await User.findById({ _id: userId });
+  const publicMentors = await User.find({
+    "personalInfo.userType": "mentor",
+    $or: [
+      {
+        "personalInfo.interests": {
+          $elemMatch: { $in: user.personalInfo.interests },
+        },
+      },
+      {
+        "personalInfo.skills": {
+          $in: user.personalInfo.skills,
+        },
+      },
+    ],
+  }).select("_id");
+
+  publicMentors.forEach((mentor) => {
+    console.log(mentor._id);
+  });
+
+  res.status(200).json({
+    status: true,
+    message: "Top mentor matches found for the mentee",
+    data: {
+      publicMentors,
+    },
+  });
 });
