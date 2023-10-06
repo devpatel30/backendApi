@@ -258,10 +258,9 @@ module.exports.editPortfolio = async (req, res, next) => {
     updateObj.images = imagesIds;
   }
 
-  const portfolio = await Portfolio.findOne({ _id: id, createdBy: req.userId });
-  portfolio.set(updateObj);
-  portfolio.save();
+  const portfolio = await Portfolio.findOne({ _id: id, createdBy: userId });
 
+  // check if the portfolio exists and the logged in user created it
   if (!portfolio) {
     return res.status(404).json({
       status: false,
@@ -269,11 +268,15 @@ module.exports.editPortfolio = async (req, res, next) => {
       data: null,
     });
   }
+  // when found set the portfolio with updateObj
+  portfolio.set(updateObj);
+  await portfolio.save();
 
+  const resPort = await Portfolio.findOne({ _id: id, createdBy: userId });
   return res.status(200).json({
     status: true,
     message: "Successfully edited portfolio",
-    data: portfolio,
+    data: resPort,
   });
 };
 
