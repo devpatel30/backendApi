@@ -12,6 +12,15 @@ const {
   verifyMentor,
   topMatch,
   getPublicMentor,
+  getMentorshipProgram,
+  editMentorshipProgram,
+  extendProgramDuration,
+  sendFeedback,
+  handleExtensionRequest,
+  createTask,
+  updateTask,
+  deleteTask,
+  updateTaskStatus,
 } = require("../controllers/mentorshipController");
 
 // get top matches
@@ -43,5 +52,35 @@ router.post("/accept-mentee", isLoggedIn, acceptApplicationRequest);
 
 // Reject Mentee Request
 router.post("/reject-mentee", isLoggedIn, rejectApplicationRequest);
+
+// fetch user's mentors past and current
+router.get("/fetch-my-mentors", isLoggedIn);
+
+// create mentorship program
+router.post("/get-mentorship-program", isLoggedIn, getMentorshipProgram);
+
+// edit mentorship program
+router.patch("/edit-mentorship-program", isLoggedIn, editMentorshipProgram);
+
+// extend program,  mentee requests for extension for program
+router.patch("/extend-mentorship-program", isLoggedIn, extendProgramDuration);
+
+// extend program,  mentee requests for extension for program
+router.patch("/handle-extension-request", isLoggedIn, handleExtensionRequest);
+
+// feedback form
+router.post("/submit-feedback", isLoggedIn, sendFeedback);
+
+// create task
+router.post("/program-task", isLoggedIn, createTask);
+
+// update task
+router.patch("/program-task", isLoggedIn, updateTask);
+
+// delete task
+router.delete("/program-task", isLoggedIn, deleteTask);
+
+// update task status
+router.patch("/program-task-status", isLoggedIn, updateTaskStatus);
 
 module.exports = router;
