@@ -1,4 +1,3 @@
-const { Types } = require("mongoose");
 const catchAsync = require("../utils/catchAsync");
 const Expertise = require("../models/expertise");
 const Availability = require("../models/availability");
@@ -6,9 +5,12 @@ const MenteeApplicationForm = require("../models/menteeApplicationForm");
 const ApplicationRequest = require("../models/applicationRequest");
 const Mentee = require("../models/mentee");
 const User = require("../models/user");
+const Task = require("../models/task");
 const InstitutionVerificationRequest = require("../models/institutionVerificationRequest");
 const InstitutionPeople = require("../models/InstitutionPeople");
 const { generateJWT } = require("./userControllers");
+const mentee = require("../models/mentee");
+const mentorshipFeedback = require("../models/mentorshipFeedback");
 
 module.exports.becomeMentor = catchAsync(async (req, res, next) => {
   const {
@@ -302,7 +304,7 @@ module.exports.acceptApplicationRequest = catchAsync(async (req, res, next) => {
   ]);
   res.status(200).json({
     status: true,
-    message: "Mentee is Accepted successfuly",
+    message: "Mentee is Accepted successfully",
   });
 });
 
@@ -447,5 +449,158 @@ module.exports.getPublicMentor = catchAsync(async (req, res, next) => {
     data: {
       publicMentors,
     },
+  });
+});
+
+module.exports.getMentorshipProgram = catchAsync(async (req, res, next) => {
+  const { mentorId, menteeId } = req.body;
+  const programDetails = await mentee.find({
+    mentor: mentorId,
+    mentee: menteeId,
+  });
+  res.json({ status: true, data: programDetails });
+});
+
+module.exports.editMentorshipProgram = catchAsync(async (req, res, next) => {
+  const { mentorId, menteeId, isAgreementSigned, totalDays } = req.body;
+  const program = await mentee.findOneAndUpdate({
+    mentor: mentorId,
+    mentee: menteeId,
+  });
+  program.totalDays = totalDays;
+  program.isAgreementSigned = isAgreementSigned;
+  res.json({
+    status: true,
+    message: "Program details updated",
+    data: program,
+    token: req.headers.authorization,
+  });
+});
+
+module.exports.extendProgramDuration = catchAsync(async (req, res, next) => {
+  // default extension by 15 days
+  const { mentorId, days = 15 } = req.body;
+  const programDetails = await mentee.findOneAndUpdate({
+    mentor: mentorId,
+    mentee: req.userId,
+    extensionStatus: "pending",
+  });
+  programDetails.extensionDays = days;
+  await programDetails.save();
+  res.json({
+    status: true,
+    message: `Extension of ${days} days requested`,
+    data: programDetails,
+  });
+});
+
+module.exports.handleExtensionRequest = catchAsync(async (req, res, next) => {
+  const { menteeId, isAccepted, modifyDays = null } = req.body;
+  const programDetails = await mentee.findOneAndUpdate({
+    mentor: req.userId,
+    mentee: menteeId,
+  });
+  console.log(modifyDays);
+  var request;
+  if (isAccepted === "true") {
+    programDetails.extensionStatus = "done";
+    // if (modifyDays !== "null") programDetails.extensionDays = modifyDays;
+    request = "accepted";
+  } else {
+    programDetails.extensionStatus = "declined";
+    programDetails.extensionDays = 0;
+    request = "rejected";
+  }
+  await programDetails.save();
+  res.json({
+    status: true,
+    message: `Extension request ${request}`,
+    data: programDetails,
+  });
+});
+
+module.exports.sendFeedback = catchAsync(async (req, res, next) => {
+  const clientData = req.body;
+  const userId = req.userId;
+  const dynamicReqBody = clientData;
+  const formObj = {
+    userId: userId,
+    programId: dynamicReqBody.programId,
+    communicationEffectiveness: {
+      rating: dynamicReqBody.communicationEffectivenessRate,
+      message: dynamicReqBody.communicationEffectivenessMessage,
+    },
+    supportLevel: {
+      rating: dynamicReqBody.supportLevelRate,
+      message: dynamicReqBody.supportLevelMessage,
+    },
+    knowledgeExchange: {
+      rating: dynamicReqBody.knowledgeExchangeRate,
+      message: dynamicReqBody.knowledgeExchangeMessage,
+    },
+    progressRate: {
+      rating: dynamicReqBody.progressRate,
+      message: dynamicReqBody.progressMessage,
+    },
+  };
+  const feedbackForm = new mentorshipFeedback(formObj);
+  await feedbackForm.save();
+  // Now dynamicReqBody contains
+  res.json({
+    status: true,
+    message: "Feedback submitted successfully",
+    data: feedbackForm,
+  });
+});
+
+module.exports.createTask = catchAsync(async (req, res, next) => {
+  const { programId, name, description, assignedTo } = req.body;
+  const taskObj = {
+    name,
+    description,
+    assignedBy: req.userId,
+    assignedTo,
+  };
+  const task = new Task(taskObj);
+  await task.save();
+  res.json({ status: true, message: "Task created successfully", data: task });
+});
+
+module.exports.updateTask = catchAsync(async (req, res, next) => {
+  const { taskId, name, description, assignedTo } = req.body;
+  const task = await Task.findOneAndUpdate(
+    {
+      _id: taskId,
+    },
+    { name, description, assignedBy: req.userId, assignedTo }
+  );
+
+  res.json({ status: true, message: "Task updated successfully", data: task });
+});
+
+module.exports.deleteTask = catchAsync(async (req, res, next) => {
+  const { taskId } = req.body;
+  const task = await Task.findOneAndDelete({
+    _id: taskId,
+  });
+  res.json({ status: true, message: "Task deleted successfully" });
+});
+
+module.exports.updateTaskStatus = catchAsync(async (req, res, next) => {
+  const { taskId, isCompleted } = req.body;
+  const taskStatus = Boolean(isCompleted);
+  const task = await Task.findOneAndUpdate(
+    {
+      _id: taskId,
+    },
+    {
+      isCompleted: taskStatus,
+    },
+    { new: true }
+  );
+  res.json({
+    status: true,
+    message: "Task status updated successfully",
+    data: task,
   });
 });

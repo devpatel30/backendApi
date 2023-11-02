@@ -12,6 +12,14 @@ const taskSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  assignedBy: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+  },
+  assignedTo: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+  },
 });
 
 module.exports = new mongoose.model("Task", taskSchema);
