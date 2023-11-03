@@ -572,7 +572,8 @@ module.exports.updateTask = catchAsync(async (req, res, next) => {
     {
       _id: taskId,
     },
-    { name, description, assignedBy: req.userId, assignedTo }
+    { name, description, assignedBy: req.userId, assignedTo },
+    { new: true }
   );
 
   res.json({ status: true, message: "Task updated successfully", data: task });
