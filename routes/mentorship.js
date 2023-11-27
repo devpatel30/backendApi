@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { isLoggedIn } = require("../middleware/utils");
+const multer = require("multer");
 const {
   becomeMentor,
   fetchMentees,
@@ -21,6 +22,9 @@ const {
   updateTask,
   deleteTask,
   updateTaskStatus,
+  fetchInstMentorshipProgram,
+  createInstProgram,
+  updateInstProgram,
 } = require("../controllers/mentorshipController");
 
 // get top matches
@@ -82,5 +86,16 @@ router.delete("/program-task", isLoggedIn, deleteTask);
 
 // update task status
 router.patch("/program-task-status", isLoggedIn, updateTaskStatus);
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+router
+  .route("/institution-mentorship-program")
+  // create institution mentorship program
+  .post(isLoggedIn, upload.single("coverImage"), createInstProgram)
+  // fetch institution mentorship programs
+  .get(isLoggedIn, fetchInstMentorshipProgram)
+  // update institution mentorship programs
+  .patch(isLoggedIn, upload.single("coverImage"), updateInstProgram);
 
 module.exports = router;

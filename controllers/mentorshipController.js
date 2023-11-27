@@ -11,6 +11,8 @@ const InstitutionPeople = require("../models/InstitutionPeople");
 const { generateJWT } = require("./userControllers");
 const mentee = require("../models/mentee");
 const mentorshipFeedback = require("../models/mentorshipFeedback");
+const institutionMentorshipProgram = require("../models/institutionMentorshipProgram");
+const { uploadImageToS3 } = require("../utils/mediaHandler");
 
 module.exports.becomeMentor = catchAsync(async (req, res, next) => {
   const {
@@ -603,5 +605,78 @@ module.exports.updateTaskStatus = catchAsync(async (req, res, next) => {
     status: true,
     message: "Task status updated successfully",
     data: task,
+  });
+});
+
+module.exports.fetchInstMentorshipProgram = catchAsync(
+  async (req, res, next) => {
+    const programs = await institutionMentorshipProgram.find({
+      createdBy: req.userId,
+    });
+    res.json({ status: true, message: "Your programs", data: programs });
+  }
+);
+
+module.exports.createInstProgram = catchAsync(async (req, res, next) => {
+  const { description, invitedPeople } = req.body;
+  const coverImage = req.file;
+  const programObj = {
+    description,
+    invitedPeople,
+  };
+  const instProgram = new institutionMentorshipProgram(programObj);
+  await instProgram.save();
+  const model = institutionMentorshipProgram;
+
+  const img = await uploadImageToS3(
+    model,
+    instProgram._id,
+    coverImage.buffer,
+    coverImage.mimeType,
+    "coverImage",
+    "imageUrl"
+  );
+  res.json({
+    status: true,
+    data: { ...img.toObject(), token: req.headers.authorization },
+  });
+});
+
+module.exports.updateInstProgram = catchAsync(async (req, res, next) => {
+  const { description, invitedPeople } = req.body;
+  const { programId } = req.body;
+  const coverImage = req.file;
+  const model = institutionMentorshipProgram;
+  // Initialize an empty updateObj
+  const updateObj = {};
+
+  // Conditionally add properties to updateObj if they are not empty
+  if (description) {
+    updateObj.description = description;
+  }
+  if (invitedPeople.length > 0) {
+    updateObj.invitedPeople = invitedPeople;
+  }
+
+  let modModel;
+  if (coverImage !== undefined) {
+    modModel = uploadImageToS3(
+      institutionMentorshipProgram,
+      programId,
+      req.file.buffer,
+      req.file.mimeType,
+      "coverImage",
+      "imageUrl"
+    );
+  }
+
+  const program = await institutionMentorshipProgram.findOneAndUpdate(
+    { _id: programId },
+    { $set: { description, invitedPeople } },
+    { new: true }
+  );
+  res.json({
+    status: true,
+    data: { ...program.toObject(), token: req.headers.authorization },
   });
 });
