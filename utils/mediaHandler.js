@@ -41,11 +41,14 @@ module.exports.uploadImageToS3 = async (
       throw new Error("File buffer is empty");
     }
     const currentModel = await model.findOne({ _id: objectId });
-
-    if (currentModel && currentModel[imageFieldName]) {
+    if (
+      currentModel &&
+      currentModel[imageFieldName] &&
+      currentModel[imageLinkFieldName]
+    ) {
       // Delete the previous image from S3
       const previousImageName = currentModel[imageFieldName].fileName;
-      await deleteImageFromS3(
+      await this.deleteImageFromS3(
         model,
         objectId,
         previousImageName,
@@ -53,7 +56,6 @@ module.exports.uploadImageToS3 = async (
         imageLinkFieldName
       );
     }
-
     const imageName = randomImageName();
     const params = {
       Bucket: s3BucketName,
@@ -84,7 +86,7 @@ module.exports.uploadImageToS3 = async (
     );
     return savedModel;
   } catch (e) {
-    return { status: false, message: e.message, error: e };
+    throw new Error(e.message);
   }
 };
 
@@ -107,9 +109,9 @@ module.exports.deleteImageFromS3 = async (
     const savedModel = await model.findOneAndUpdate(
       { _id: objectId },
       {
-        $pull: {
-          [imageFieldName]: { fileName: imageFileName },
-          [imageLinkFieldName]: { $regex: imageFileName },
+        $set: {
+          [imageFieldName]: { fileName: null },
+          [imageLinkFieldName]: null,
         },
       },
       { new: true }

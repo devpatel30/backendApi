@@ -617,6 +617,33 @@ module.exports.fetchInstMentorshipProgram = catchAsync(
   }
 );
 
+// module.exports.createInstProgram = catchAsync(async (req, res, next) => {
+//   const { description, invitedPeople } = req.body;
+//   const coverImage = req.file;
+//   const programObj = {
+//     createdBy: req.userId,
+//     description,
+//     invitedPeople,
+//   };
+//   const instProgram = new institutionMentorshipProgram(programObj);
+//   await instProgram.save();
+//   const model = institutionMentorshipProgram;
+//   // console.log(coverImage);
+//   const img = await uploadImageToS3(
+//     model,
+//     instProgram._id,
+//     coverImage.buffer,
+//     coverImage.mimeType,
+//     "coverImage",
+//     "imageUrl"
+//   );
+//   console.log(img);
+//   res.json({
+//     status: true,
+//     data: { ...instProgram.toObject(), token: req.headers.authorization },
+//   });
+// });
+
 module.exports.createInstProgram = catchAsync(async (req, res, next) => {
   const { description, invitedPeople } = req.body;
   const coverImage = req.file;
@@ -636,9 +663,10 @@ module.exports.createInstProgram = catchAsync(async (req, res, next) => {
     "coverImage",
     "imageUrl"
   );
+  const updatedModel = img;
   res.json({
     status: true,
-    data: { ...img.toObject(), token: req.headers.authorization },
+    data: { ...updatedModel.toObject(), token: req.headers.authorization },
   });
 });
 
@@ -658,9 +686,8 @@ module.exports.updateInstProgram = catchAsync(async (req, res, next) => {
     updateObj.invitedPeople = invitedPeople;
   }
 
-  let modModel;
   if (coverImage !== undefined) {
-    modModel = uploadImageToS3(
+    uploadImageToS3(
       institutionMentorshipProgram,
       programId,
       req.file.buffer,
@@ -680,3 +707,15 @@ module.exports.updateInstProgram = catchAsync(async (req, res, next) => {
     data: { ...program.toObject(), token: req.headers.authorization },
   });
 });
+
+module.exports.fetchfypInstMentorshipProgram = catchAsync(
+  async (req, res, next) => {
+    const programs = await mentee.find({ mentee: req.userId });
+    const user = await User.findOne({ _id: req.userId });
+    const suggestedMentors = getPublicMentor(req.userId);
+    res.json({
+      status: true,
+      data: { enrolled: programs, suggested: suggested },
+    });
+  }
+);
