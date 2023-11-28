@@ -25,6 +25,7 @@ const {
   fetchInstMentorshipProgram,
   createInstProgram,
   updateInstProgram,
+  fetchfypInstMentorshipProgram,
 } = require("../controllers/mentorshipController");
 
 // get top matches
@@ -98,4 +99,11 @@ router
   // update institution mentorship programs
   .patch(isLoggedIn, upload.single("coverImage"), updateInstProgram);
 
+router.route("/institution-mentorship-program-associated-people").post();
+// my enrolled programs
+router.get(
+  "/fetch-fyp-institution-programs",
+  isLoggedIn,
+  fetchfypInstMentorshipProgram
+);
 module.exports = router;
