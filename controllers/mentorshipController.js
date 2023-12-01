@@ -617,39 +617,13 @@ module.exports.fetchInstMentorshipProgram = catchAsync(
   }
 );
 
-// module.exports.createInstProgram = catchAsync(async (req, res, next) => {
-//   const { description, invitedPeople } = req.body;
-//   const coverImage = req.file;
-//   const programObj = {
-//     createdBy: req.userId,
-//     description,
-//     invitedPeople,
-//   };
-//   const instProgram = new institutionMentorshipProgram(programObj);
-//   await instProgram.save();
-//   const model = institutionMentorshipProgram;
-//   // console.log(coverImage);
-//   const img = await uploadImageToS3(
-//     model,
-//     instProgram._id,
-//     coverImage.buffer,
-//     coverImage.mimeType,
-//     "coverImage",
-//     "imageUrl"
-//   );
-//   console.log(img);
-//   res.json({
-//     status: true,
-//     data: { ...instProgram.toObject(), token: req.headers.authorization },
-//   });
-// });
-
 module.exports.createInstProgram = catchAsync(async (req, res, next) => {
   const { description, invitedPeople } = req.body;
   const coverImage = req.file;
   const programObj = {
     description,
     invitedPeople,
+    createdBy: req.userId,
   };
   const instProgram = new institutionMentorshipProgram(programObj);
   await instProgram.save();
@@ -671,7 +645,7 @@ module.exports.createInstProgram = catchAsync(async (req, res, next) => {
 });
 
 module.exports.updateInstProgram = catchAsync(async (req, res, next) => {
-  const { description, invitedPeople } = req.body;
+  const { description, invitedPeople, mentorLimit } = req.body;
   const { programId } = req.body;
   const coverImage = req.file;
   const model = institutionMentorshipProgram;
@@ -681,6 +655,9 @@ module.exports.updateInstProgram = catchAsync(async (req, res, next) => {
   // Conditionally add properties to updateObj if they are not empty
   if (description) {
     updateObj.description = description;
+  }
+  if (mentorLimit) {
+    updateObj.mentorLimit = mentorLimit;
   }
   if (invitedPeople.length > 0) {
     updateObj.invitedPeople = invitedPeople;

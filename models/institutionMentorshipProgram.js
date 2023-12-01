@@ -17,6 +17,7 @@ const instMentorsipProgramSchema = new Schema({
   },
   mentorLimit: {
     type: Number,
+    default: 1,
   },
   noOfMentors: {
     type: Number,
