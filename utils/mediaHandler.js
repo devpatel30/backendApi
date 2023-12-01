@@ -70,6 +70,8 @@ module.exports.uploadImageToS3 = async (
     const getObjectParams = {
       Bucket: s3BucketName,
       Key: imageName,
+      ResponseContentType: mimeType,
+      ResponseContentDisposition: "inline",
     };
     const getCommand = new GetObjectCommand(getObjectParams);
     const imageUrl = await getSignedUrl(s3, getCommand, { expiresIn: 604800 });
