@@ -13,6 +13,7 @@ const mentee = require("../models/mentee");
 const mentorshipFeedback = require("../models/mentorshipFeedback");
 const institutionMentorshipProgram = require("../models/institutionMentorshipProgram");
 const { uploadImageToS3 } = require("../utils/mediaHandler");
+const { getProfileInformation } = require("../middleware/profileInformation");
 
 module.exports.becomeMentor = catchAsync(async (req, res, next) => {
   const {
@@ -689,10 +690,57 @@ module.exports.fetchfypInstMentorshipProgram = catchAsync(
   async (req, res, next) => {
     const programs = await mentee.find({ mentee: req.userId });
     const user = await User.findOne({ _id: req.userId });
-    const suggestedMentors = getPublicMentor(req.userId);
+    const suggestedMentors = await this.getPublicMentor(req, res, next);
+
     res.json({
       status: true,
-      data: { enrolled: programs, suggested: suggested },
+      data: { enrolled: programs, suggested: suggestedMentors },
     });
+  }
+);
+
+module.exports.myMentors = catchAsync(async (req, res, next) => {
+  const mentors = await mentee.find({ mentee: req.userId });
+  const currentMentorId = mentors.map((mentor) => mentor.mentor);
+  // const currentMentors = await User.find({ _id: { $in: currentMentorId } });
+  const profiles = [];
+  for (const mentorId of currentMentorId) {
+    const { status, profile } = await getProfileInformation(
+      req.userId,
+      mentorId
+    );
+    if (status) {
+      profiles.push(profile);
+    } else {
+      console.error(`Error fetching profile for user ${mentorId}`);
+    }
+  }
+
+  res.json({ status: true, mentors: profiles });
+});
+
+module.exports.fetchAllInstMentorshipProgram = catchAsync(
+  async (req, res, next) => {
+    const programs = await institutionMentorshipProgram.find({});
+    res.json({ status: true, data: programs });
+  }
+);
+
+module.exports.joinInstMentorshipProgram = catchAsync(
+  async (req, res, next) => {
+    const { programId, type } = req.body;
+    const user = await User.findOne({ _id: req.userId });
+    if (user.personalInfo.userType == "user" && type == "mentor") {
+      res.json({
+        status: true,
+        message:
+          "Non mentor users cannot join as mentor, need to change usertype to mentor for becoming mentor of institute",
+      });
+    }
+    const programs = await institutionMentorshipProgram.findOneAndUpdate(
+      { _id: programId },
+      { isJoined: true }
+    );
+    res.json({ status: true, data: programs });
   }
 );

@@ -30,8 +30,13 @@ const instMentorsipProgramSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  isJoined: {
+    type: Boolean,
+    default: false,
+  },
   noOfPeopleAssociated: {
     type: Number,
+    default: 0,
   },
   recentPeopleAssociated: [
     {
@@ -40,6 +45,12 @@ const instMentorsipProgramSchema = new Schema({
     },
   ],
   invitedPeople: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ],
+  associatedPeople: [
     {
       type: Schema.Types.ObjectId,
       ref: "User",

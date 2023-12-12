@@ -26,6 +26,9 @@ const {
   createInstProgram,
   updateInstProgram,
   fetchfypInstMentorshipProgram,
+  myMentors,
+  fetchAllInstMentorshipProgram,
+  joinInstMentorshipProgram,
 } = require("../controllers/mentorshipController");
 
 // get top matches
@@ -59,7 +62,7 @@ router.post("/accept-mentee", isLoggedIn, acceptApplicationRequest);
 router.post("/reject-mentee", isLoggedIn, rejectApplicationRequest);
 
 // fetch user's mentors past and current
-router.get("/fetch-my-mentors", isLoggedIn);
+router.get("/fetch-my-mentors", isLoggedIn, myMentors);
 
 // create mentorship program
 router.post("/get-mentorship-program", isLoggedIn, getMentorshipProgram);
@@ -70,7 +73,7 @@ router.patch("/edit-mentorship-program", isLoggedIn, editMentorshipProgram);
 // extend program,  mentee requests for extension for program
 router.patch("/extend-mentorship-program", isLoggedIn, extendProgramDuration);
 
-// extend program,  mentee requests for extension for program
+// extend program,  mentee requests for extension for progra
 router.patch("/handle-extension-request", isLoggedIn, handleExtensionRequest);
 
 // feedback form
@@ -99,11 +102,24 @@ router
   // update institution mentorship programs
   .patch(isLoggedIn, upload.single("coverImage"), updateInstProgram);
 
-router.route("/institution-mentorship-program-associated-people").post();
+router
+  .route("/institution-mentorship-program-associated-people")
+  .post(isLoggedIn, fetchfypInstMentorshipProgram);
 // my enrolled programs
 router.get(
   "/fetch-fyp-institution-programs",
   isLoggedIn,
   fetchfypInstMentorshipProgram
+);
+
+router.get(
+  "/fetch-all-institution-mentorship-program",
+  isLoggedIn,
+  fetchAllInstMentorshipProgram
+);
+router.post(
+  "/join-institution-mentorship-program",
+  isLoggedIn,
+  joinInstMentorshipProgram
 );
 module.exports = router;
