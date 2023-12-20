@@ -84,13 +84,13 @@ module.exports.becomeMentor = catchAsync(async (req, res, next) => {
     return res.status(200).json({
       status: true,
       message: "Your verification is in progress",
-      data: { token: "Bearer " + token, user },
+      data: { ...user.toObject(), token: "Bearer: " + token },
     });
   }
   res.status(200).json({
     status: true,
     message: "You're all set",
-    data: { token: "Bearer " + token, user },
+    data: { ...user.toObject(), token: "Bearer: " + token },
   });
 });
 
@@ -692,10 +692,17 @@ module.exports.fetchfypInstMentorshipProgram = catchAsync(
     const user = await User.findOne({ _id: req.userId });
     const suggestedMentors = await this.getPublicMentor(req, res, next);
 
-    res.json({
-      status: true,
-      data: { enrolled: programs, suggested: suggestedMentors },
-    });
+    // res.json({
+    //   status: true,
+    //   data: { enrolled: programs, suggested: suggestedMentors },
+    // });
+    if (!res.headersSent) {
+      // If headers are not sent, send the response
+      res.status(200).json({
+        status: true,
+        data: { enrolled: programs, suggested: suggestedMentors },
+      });
+    }
   }
 );
 
@@ -737,9 +744,25 @@ module.exports.joinInstMentorshipProgram = catchAsync(
           "Non mentor users cannot join as mentor, need to change usertype to mentor for becoming mentor of institute",
       });
     }
+    const userAlreadyJoined = await institutionMentorshipProgram.exists({
+      _id: programId,
+      associatedPeople: req.userId,
+    });
+
+    if (userAlreadyJoined) {
+      return res.json({
+        status: true,
+        message: "You have already joined this program.",
+      });
+    }
     const programs = await institutionMentorshipProgram.findOneAndUpdate(
       { _id: programId },
-      { isJoined: true }
+      {
+        $set: { isJoined: true },
+        $inc: { noOfPeopleAssociated: 1 },
+        $addToSet: { associatedPeople: req.userId },
+      },
+      { new: true }
     );
     res.json({ status: true, data: programs });
   }
