@@ -67,14 +67,14 @@ app.use("/auth", authRoutes);
 app.use("/resource", resourceRoutes);
 app.use("/mentor", mentorshipRoutes);
 app.use("/connection", connectionRoutes);
-app.use("/institution", institutionRoutes)
+app.use("/institution", institutionRoutes);
 
 app.all("*", (req, res, next) => {
   res.status(404).json({ status: false, message: "Page not found" });
 });
 //err handler
 app.use((err, req, res, next) => {
-  const { status = 500 } = err;
+  const { status = 200 } = err;
   if (!err.message) {
     err.message = "Something went wrong";
   }
