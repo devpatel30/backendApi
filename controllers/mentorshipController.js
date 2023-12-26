@@ -13,7 +13,11 @@ const mentee = require("../models/mentee");
 const mentorshipFeedback = require("../models/mentorshipFeedback");
 const institutionMentorshipProgram = require("../models/institutionMentorshipProgram");
 const { uploadImageToS3 } = require("../utils/mediaHandler");
-const { getProfileInformation } = require("../middleware/profileInformation");
+const {
+  getProfileInformation,
+  getMentorProfileInformation,
+} = require("../middleware/profileInformation");
+const profile = require("../models/profile");
 
 module.exports.becomeMentor = catchAsync(async (req, res, next) => {
   const {
@@ -442,15 +446,23 @@ module.exports.getPublicMentor = catchAsync(async (req, res, next) => {
     ],
   }).select("_id");
 
-  publicMentors.forEach((mentor) => {
-    console.log(mentor._id);
-  });
-
+  const profiles = [];
+  for (const mentorId of publicMentors) {
+    const { status, profile } = await getMentorProfileInformation(
+      req.userId,
+      mentorId
+    );
+    if (status) {
+      profiles.push(profile);
+    } else {
+      console.error(`Error fetching profile for user ${mentorId}`);
+    }
+  }
   res.status(200).json({
     status: true,
     message: "Top mentor matches found for the mentee",
     data: {
-      publicMentors,
+      profiles,
     },
   });
 });
@@ -639,6 +651,8 @@ module.exports.createInstProgram = catchAsync(async (req, res, next) => {
     "imageUrl"
   );
   const updatedModel = img;
+  // send connection resource in the innvitedpeople section and fromt that extract name, headline and image from user resource
+
   res.json({
     status: true,
     data: { ...updatedModel.toObject(), token: req.headers.authorization },
@@ -688,21 +702,19 @@ module.exports.updateInstProgram = catchAsync(async (req, res, next) => {
 
 module.exports.fetchfypInstMentorshipProgram = catchAsync(
   async (req, res, next) => {
-    const programs = await mentee.find({ mentee: req.userId });
-    const user = await User.findOne({ _id: req.userId });
-    const suggestedMentors = await this.getPublicMentor(req, res, next);
-
-    // res.json({
-    //   status: true,
-    //   data: { enrolled: programs, suggested: suggestedMentors },
+    const programs = await institutionMentorshipProgram.find({
+      associatedPeople: { $in: [req.userId] },
+    });
+    // const user = await User.findOne({ _id: req.userId });
+    // const instMentors = await institutionMentorshipProgram.find({
+    //   associatedPeople,
     // });
-    if (!res.headersSent) {
-      // If headers are not sent, send the response
-      res.status(200).json({
-        status: true,
-        data: { enrolled: programs, suggested: suggestedMentors },
-      });
-    }
+    const suggestedPrograms = await institutionMentorshipProgram.find({});
+
+    res.status(200).json({
+      status: true,
+      data: { enrolled: programs, suggested: suggestedPrograms },
+    });
   }
 );
 
@@ -738,7 +750,7 @@ module.exports.joinInstMentorshipProgram = catchAsync(
     const { programId, type } = req.body;
     const user = await User.findOne({ _id: req.userId });
     if (user.personalInfo.userType == "user" && type == "mentor") {
-      res.json({
+      return res.json({
         status: true,
         message:
           "Non mentor users cannot join as mentor, need to change usertype to mentor for becoming mentor of institute",
@@ -766,4 +778,12 @@ module.exports.joinInstMentorshipProgram = catchAsync(
     );
     res.json({ status: true, data: programs });
   }
+);
+
+module.exports.fetchInstAssociatedPeople = catchAsync(
+  async (req, res, next) => {}
+);
+
+module.exports.editInstAssociatedPeople = catchAsync(
+  async (req, res, next) => {}
 );

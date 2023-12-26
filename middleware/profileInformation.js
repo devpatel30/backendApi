@@ -1,5 +1,5 @@
 const Profile = require("../models/profile");
-const { Save, Connection, Follow } = require("../models");
+const { Save, Connection, Follow, MentorInfo, Mentee } = require("../models");
 const { fetchMutualConnections } = require("../utils/mutualConnections");
 
 // Function to get connection status
@@ -105,5 +105,41 @@ module.exports.getProfileInformation = async (currentUserId, personId) => {
   } catch (error) {
     console.error(error);
     return { status: false, message: "Error fetching profile", profile: null };
+  }
+};
+
+module.exports.getMentorProfileInformation = async (userId, mentorId) => {
+  try {
+    let profile = await MentorInfo.findOne({ mentorId }).populate({
+      path: "mentorId",
+      select: "personalInfo",
+    });
+    const isMentor = await Mentee.find({ mentor: mentorId, mentee: userId });
+    if (!profile) {
+      const defaultProfileData = {
+        mentorId,
+        isJoined: false,
+      };
+      if (isMentor.length !== 0) {
+        defaultProfileData.isJoined = true;
+      } else {
+        defaultProfileData.isJoined = false;
+      }
+
+      profile = await MentorInfo.create(defaultProfileData);
+    }
+
+    const mentorProfile = {
+      ...profile._doc,
+      mentorId: profile.mentorId.personalInfo,
+    };
+    return {
+      status: true,
+      message: "Public mentors",
+      profile: mentorProfile,
+    };
+  } catch (error) {
+    console.error(error);
+    return { status: false, message: "Error fetching mentors", profile: null };
   }
 };

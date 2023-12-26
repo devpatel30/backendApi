@@ -29,6 +29,8 @@ const {
   myMentors,
   fetchAllInstMentorshipProgram,
   joinInstMentorshipProgram,
+  fetchInstAssociatedPeople,
+  editInstAssociatedPeople,
 } = require("../controllers/mentorshipController");
 
 // get top matches
@@ -104,7 +106,9 @@ router
 
 router
   .route("/institution-mentorship-program-associated-people")
-  .post(isLoggedIn, fetchfypInstMentorshipProgram);
+  .post(isLoggedIn, fetchInstAssociatedPeople)
+  .patch(isLoggedIn, editInstAssociatedPeople);
+
 // my enrolled programs
 router.get(
   "/fetch-fyp-institution-programs",

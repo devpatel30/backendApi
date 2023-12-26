@@ -142,7 +142,10 @@ const userSchema = new Schema({
     },
     mentorTimeDuration: {
       type: Number,
-    }
+    },
+    isActive: {
+      type: Boolean,
+    },
   },
   institution: {
     creatorInfo: {
@@ -157,6 +160,10 @@ const userSchema = new Schema({
     institution: {
       type: Schema.Types.ObjectId,
       ref: "Company",
+    },
+    programStatus: {
+      type: String,
+      enum: ["exists", "suggested", "doesNotExist"],
     },
     // required: function () {
     //   return this.userType === "institution";
