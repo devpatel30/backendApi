@@ -132,6 +132,7 @@ module.exports.getMentorProfileInformation = async (userId, mentorId) => {
     const mentorProfile = {
       ...profile._doc,
       mentorId: profile.mentorId.personalInfo,
+      description: profile.mentorId.about,
     };
     return {
       status: true,

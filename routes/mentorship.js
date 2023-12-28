@@ -31,6 +31,7 @@ const {
   joinInstMentorshipProgram,
   fetchInstAssociatedPeople,
   editInstAssociatedPeople,
+  deleteApplicationForm,
 } = require("../controllers/mentorshipController");
 
 // get top matches
@@ -49,7 +50,8 @@ router.post("/verify-mentor", isLoggedIn, verifyMentor);
 router
   .route("/mentorship-application-form")
   .post(isLoggedIn, createApplicationForm)
-  .get(isLoggedIn, fetchApplicationForms);
+  .get(isLoggedIn, fetchApplicationForms)
+  .delete(isLoggedIn, deleteApplicationForm);
 
 // Apply to be mentor's mentee
 router.post("/apply-to-be-mentors-mentee", isLoggedIn, applyToBeMentorsMentee);

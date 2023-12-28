@@ -343,6 +343,19 @@ module.exports.rejectApplicationRequest = catchAsync(async (req, res, next) => {
   });
 });
 
+module.exports.deleteApplicationForm = catchAsync(async (req, res, next) => {
+  const { formId } = req.body;
+  const form = await MenteeApplicationForm.findOneAndDelete({
+    _id: formId,
+    createdBy: req.userId,
+  });
+  if (!form) {
+    res.json({ status: true, message: "Form already deleted or not found" });
+  } else {
+    res.json({ status: true, message: "Form deleted sucessfully" });
+  }
+});
+
 module.exports.topMatch = catchAsync(async (req, res, next) => {
   // logic:
   // find that the user has menteeapplication form filled out
